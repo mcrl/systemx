@@ -3,25 +3,16 @@
 #include <iostream>
 #include <string>
 
-#include "systemxConfig.h"
+#include "systemxConfig.hpp"
+#include "utils.hpp"
 
 int main(int argc, char* argv[])
 {
-  if (argc < 2) {
-    // TODO 12: Create a print statement using Tutorial_VERSION_MAJOR
-    //          and Tutorial_VERSION_MINOR
-    std::cout << "Usage: " << argv[0] << " number" << std::endl;
-    return 1;
-  }
 
-  std::cout << SYSTEMX_VERSION_MAJOR << "." << SYSTEMX_VERSION_MINOR << std::endl;
+  std::cout << SYSTEMX_NAME << " " << SYSTEMX_VERSION_MAJOR << "." << SYSTEMX_VERSION_MINOR << std::endl;
 
-  // convert input to double
-  const double inputValue = std::stod(argv[1]);
+  const double t = SYSTEMX::utils::gettime();
+  std::cout << "Time " << t << std::endl;
 
-  // calculate square root
-  const double outputValue = sqrt(inputValue);
-  std::cout << "The square root of " << inputValue << " is " << outputValue
-            << std::endl;
   return 0;
 }
