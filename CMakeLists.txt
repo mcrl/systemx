@@ -10,6 +10,8 @@ project(systemx
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -g -Wall -Wno-unused-result")
+
 file(GLOB CPP_SOURCES "*.cpp" "*.cc" "*.cxx")
 file(GLOB CUDA_SOURCES "kernels/*.cu")
 
@@ -23,8 +25,9 @@ add_subdirectory(utils)
 target_link_libraries(${PROJECT_NAME} PUBLIC utils)
 
 # External libraries
-message(${PROJECT_BINARY_DIR})
+
 # Library header files
 target_include_directories(${PROJECT_NAME} PUBLIC 
   ${PROJECT_BINARY_DIR}
-  ${PROJECT_SOURCE_DIR}/utils)
+  ${PROJECT_SOURCE_DIR}/utils
+  ${PROJECT_SOURCE_DIR}/external/spdlog/include)
