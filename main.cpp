@@ -8,8 +8,10 @@
 
 #include "systemxConfig.hpp"
 #include "utils.hpp"
+#include "driver.hpp"
 
 using namespace SYSTEMX::utils;
+using namespace SYSTEMX::core;
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -22,7 +24,9 @@ int main(int argc, char *argv[])
   
   int gpu_index = 0;
   vector<string> kernels;
-  
+
+  Driver *driver;
+
   // process command line args
   if (checkCmdLineFlag(argc, (const char**)argv, "gpu")) {
     gpu_index = getCmdLineArgumentInt(argc, (const char **)argv, "gpu");
@@ -30,7 +34,7 @@ int main(int argc, char *argv[])
     gpu_index = 0;
   }
   if (gpu_index < ngpus) {
-    CUDA_CALL(cudaSetDevice(gpu_index));
+    driver = new Driver(gpu_index);
     spdlog::info("Using GPU {0}", gpu_index);
   } else {
     throw runtime_error("GPU index out of range");
@@ -43,6 +47,7 @@ int main(int argc, char *argv[])
 
       for (string kernel : kernels) {
         spdlog::info("Launching kernel: {0}", kernel);
+        // TODO: launch kernel
       }
     } else {
       throw runtime_error("No kernels specified");
@@ -51,5 +56,8 @@ int main(int argc, char *argv[])
     throw runtime_error("No kernels specified");
   }
 
+  // cleanup
+  delete driver;
+  
   return EXIT_SUCCESS;
 }
