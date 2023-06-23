@@ -5,6 +5,5 @@
 
 ## Install
 ```bash
-mkdir build && cd build
-cmake .. && cmake --build .
+./build.sh -DCUDA_INSTALL_PATH=/path/to/cuda/install
 ```

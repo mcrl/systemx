@@ -4,6 +4,7 @@
 #include <string>
 
 #include "spdlog/spdlog.h"
+#include "cuda_runtime.h"
 
 #include "systemxConfig.hpp"
 #include "utils.hpp"
@@ -15,6 +16,10 @@ int main(int argc, char *argv[])
 {
   spdlog::info("{0}{1}.{2}", SYSTEMX_NAME, SYSTEMX_VERSION_MAJOR, SYSTEMX_VERSION_MINOR);
 
+  int ngpus;
+  CUDA_CALL(cudaGetDeviceCount(&ngpus));
+  spdlog::info("Found {0} GPUs", ngpus);
+  
   int gpu_index = 0;
   vector<string> kernels;
   
@@ -24,8 +29,12 @@ int main(int argc, char *argv[])
   } else {
     gpu_index = 0;
   }
-  // TODO: cudaGetDeviceCount < gpu_index, throw error
-  spdlog::info("Using GPU {0}", gpu_index);
+  if (gpu_index < ngpus - 1) {
+    CUDA_CALL(cudaSetDevice(gpu_index));
+    spdlog::info("Using GPU {0}", gpu_index);
+  } else {
+    throw runtime_error("GPU index out of range");
+  }
 
   if (checkCmdLineFlag(argc, (const char **)argv, "kernels")) {
     char *_kernels;
