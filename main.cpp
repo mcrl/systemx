@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
   } else {
     gpu_index = 0;
   }
-  if (gpu_index < ngpus - 1) {
+  if (gpu_index < ngpus) {
     CUDA_CALL(cudaSetDevice(gpu_index));
     spdlog::info("Using GPU {0}", gpu_index);
   } else {
