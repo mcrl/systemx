@@ -5,11 +5,9 @@
 
 using SYSTEMX::core::Driver;
 
-__global__ void idle_kernel(uint seconds) {
-  for (uint i = 0; i < seconds; ++i) {
-    for (int j = 0; j < 1000; j++) {
-      __nanosleep(1000000U);
-    }
+__global__ void idle_kernel(uint milliseconds) {
+  for (uint i = 0; i < milliseconds; ++i) {
+    __nanosleep(1000000U);
   }
 }
 
@@ -18,9 +16,14 @@ void Driver::idleRun() {
 
   cudaStream_t stream = createStream();
 
-  uint idle_seconds = 10;
+  uint milliseconds = 100;
+
+  // TODO: use static values from gpu configs
+  const int maxThreadBlockSize = 1024;
+  const int maxThreadsPerSM = 2048;
+  const int nSMs = 80;
   
-  dim3 gridDim(1, 1, 1);
-  dim3 blockDim(1, 1, 1);
-  idle_kernel<<<gridDim, blockDim, 0, stream>>>(idle_seconds);
+  dim3 gridDim(maxThreadsPerSM/maxThreadBlockSize, nSMs/2, 1); // Fully occupy half of total SMs
+  dim3 blockDim(maxThreadBlockSize, 1, 1);
+  idle_kernel<<<gridDim, blockDim, 0, stream>>>(milliseconds);
 }
