@@ -20,7 +20,7 @@ void Driver::idleRun() {
 
   uint idle_seconds = 10;
   
-  dim3 gridDim(64, 64, 1);
+  dim3 gridDim(1, 1, 1);
   dim3 blockDim(1, 1, 1);
   idle_kernel<<<gridDim, blockDim, 0, stream>>>(idle_seconds);
 }

@@ -22,7 +22,10 @@ Driver::Driver(int gpu_index) {
 }
 
 Driver::~Driver() {
+  spdlog::info("Destroying driver");
+  
   for (cudaStream_t stream : streams_) {
+    CUDA_CALL(cudaStreamSynchronize(stream));
     CUDA_CALL(cudaStreamDestroy(stream));
   }
 }

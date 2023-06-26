@@ -6,5 +6,5 @@ Please refer to [instructions](SYSTEMX_INSTALL.md) to install SystemX from sourc
 ## Example command
 ``` bash
 cd build
-./systemx --gpu=<GPU_INDEX> --kernels=<COMMA_SEPERATED_KERNEL_NAMES_TO_RUN>
+./systemx --gpu=<GPU_INDEX> --kernels=<KERNEL1,KERNEL2,...>
 ```
