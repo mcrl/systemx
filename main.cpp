@@ -46,8 +46,7 @@ int main(int argc, char *argv[])
       kernels = stringSplit(string(_kernels), ",");
 
       for (string kernel : kernels) {
-        spdlog::info("Launching kernel: {0}", kernel);
-        // TODO: launch kernel
+        driver->launchKernel(kernel);
       }
     } else {
       throw runtime_error("No kernels specified");

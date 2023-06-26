@@ -13,8 +13,8 @@ __global__ void idle_kernel(uint seconds) {
   }
 }
 
-void Driver::idle_run() {
-  spdlog::info("Driver::idle_run()");
+void Driver::idleRun() {
+  spdlog::info(__PRETTY_FUNCTION__);
 
   cudaStream_t stream = createStream();
 
