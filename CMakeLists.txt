@@ -17,7 +17,7 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
   set(CMAKE_CUDA_STANDARD_REQUIRED True)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -g -Wall -Wno-unused-result")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -g -Wall -Wno-unused-result")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_70 -gencode=arch=compute_70,code=sm_70")
 
 file(GLOB CPP_SOURCES "*.cpp" "*.cc" "*.cxx")
@@ -28,10 +28,12 @@ configure_file(systemxConfig.hpp.in systemxConfig.hpp)
 
 add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${CUDA_SOURCES})
 
-# Internal libraries
-add_subdirectory(utils)
-
 # External libraries
+
+## spdlog
+add_subdirectory(${PROJECT_SOURCE_DIR}/external/spdlog)
+include_directories(${PROJECT_SOURCE_DIR}/external/spdlog/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
 
 ## CUDA
 if(NOT DEFINED CUDA_INSTALL_PATH)
@@ -40,18 +42,19 @@ endif()
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CMAKE_CUDA_ARCHITECTURES 70)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_ARCHITECTURES 70)
+target_link_libraries(${PROJECT_NAME} PUBLIC cudart)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CUDA_INSTALL_PATH}/include)
+target_link_directories(${PROJECT_NAME} PUBLIC ${CUDA_INSTALL_PATH}/lib64)
 
+# Internal libraries
+
+## utils
+add_subdirectory(${PROJECT_SOURCE_DIR}/utils)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/utils)
+target_link_libraries(${PROJECT_NAME} PUBLIC utils)
+
+# Target
 target_include_directories(${PROJECT_NAME} PUBLIC 
   ${PROJECT_BINARY_DIR}
   ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/utils
-  ${PROJECT_SOURCE_DIR}/kernels
-  ${PROJECT_SOURCE_DIR}/external/spdlog/include
-  ${CUDA_INSTALL_PATH}/include)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC 
-  utils
-  cudart)
-
-target_link_directories(${PROJECT_NAME} PUBLIC 
-  ${CUDA_INSTALL_PATH}/lib64)
+  ${PROJECT_SOURCE_DIR}/kernels)

@@ -1,4 +1,4 @@
-// #include "spdlog/spdlog.h"
+#include "spdlog/spdlog.h"
 #include "cuda_runtime.h"
 
 #include "driver.hpp"
@@ -14,7 +14,7 @@ __global__ void idle_kernel(uint seconds) {
 }
 
 void Driver::idle_run() {
-  // spdlog::trace("Driver::idle_run()");
+  spdlog::info("Driver::idle_run()");
 
   cudaStream_t stream = createStream();
 
