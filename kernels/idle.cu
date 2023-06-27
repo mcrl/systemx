@@ -2,6 +2,7 @@
 #include "cuda_runtime.h"
 
 #include "driver.hpp"
+#include "kernels.hpp"
 
 using SYSTEMX::core::Driver;
 
@@ -23,7 +24,7 @@ void Driver::idleRun() {
   const int multiProcessorCount = device_properties_.multiProcessorCount;
 
   // Fully occupy half of total SMs
-  dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock, multiProcessorCount / 2, 1);
+  dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
   dim3 blockDim(maxThreadsPerBlock, 1, 1);
   idle_kernel << <gridDim, blockDim, 0, stream >> > (milliseconds);
 }

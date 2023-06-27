@@ -5,23 +5,16 @@
 #include "cuda_runtime.h"
 
 #include "driver.hpp"
+#include "kernels.hpp"
 
 #define WPT 8 // Hyperparameter to maximize register spilling of local memory
 #define STEPS 100 * 1024 * 8 // Execution time is 100ms
 
 using SYSTEMX::core::Driver;
 
-inline __device__ float mad(const float a, const float b, const float c) {
-  return a * b + c;
-}
-
-inline __device__ float int2floatCast(const int i) {
-  return static_cast<float>(i);
-}
-
-__global__ void register_compute_kernel(float *d, float seed, int steps) {  
+__global__ void register_compute_kernel(float *d, const float seed, const int steps) {  
   float tmps[WPT];
-  int id = WPT * blockDim.x * blockIdx.x + threadIdx.x;
+  int id = blockDim.x * blockIdx.x + threadIdx.x;
 
 #pragma unroll
   for (int i = 0; i < WPT; i++) {
@@ -40,7 +33,7 @@ __global__ void register_compute_kernel(float *d, float seed, int steps) {
     // Never executed, to avoid kernel optimization
     // If not kernel execution is skipped
     if (sum == int2floatCast(-1)) {
-      d[id + j] = sum;
+      d[id * WPT + j] = sum;
     }    
   }
 }
