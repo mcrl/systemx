@@ -16,6 +16,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+  spdlog::set_level(spdlog::level::trace); // TODO: set this to off for production
   spdlog::info("{0}{1}.{2}", SYSTEMX_NAME, SYSTEMX_VERSION_MAJOR, SYSTEMX_VERSION_MINOR);
 
   int ngpus;
@@ -46,6 +47,7 @@ int main(int argc, char *argv[])
       kernels = stringSplit(string(_kernels), ",");
 
       for (string kernel : kernels) {
+        spdlog::info("Launching kernel {0}", kernel);
         driver->launchKernel(kernel);
       }
     } else {
