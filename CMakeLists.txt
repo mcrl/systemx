@@ -42,7 +42,7 @@ endif()
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CMAKE_CUDA_ARCHITECTURES 70)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_ARCHITECTURES 70)
-target_link_libraries(${PROJECT_NAME} PUBLIC cudart)
+target_link_libraries(${PROJECT_NAME} PUBLIC cudart cublas)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CUDA_INSTALL_PATH}/include)
 target_link_directories(${PROJECT_NAME} PUBLIC ${CUDA_INSTALL_PATH}/lib64)
 

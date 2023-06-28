@@ -46,7 +46,7 @@ void Driver::registerComputeRun() {
   const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
   const int multiProcessorCount = device_properties_.multiProcessorCount;
 
-  const int steps = 2630000; // Hyperparameter to set execution time 300ms
+  const int steps = 2435185; // Hyperparameter to set execution time 300ms
 
   // Fully occupy half of total SMs
   dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock * (multiProcessorCount / 2), 1, 1);
@@ -56,6 +56,6 @@ void Driver::registerComputeRun() {
   const int seed = rand();
   float *d = (float *)Driver::mallocDBuf(sizeof(float) * WPT * maxThreadsPerBlock *
                                (maxThreadsPerMultiProcessor / maxThreadsPerBlock) *
-                               (multiProcessorCount / 2));
+                               (multiProcessorCount / 2), stream);
   register_compute_kernel << <gridDim, blockDim, 0, stream >> > (d, seed, steps);
 }

@@ -56,9 +56,8 @@ void Driver::l2LoadRun() {
   const int in_size = l2CacheSize; // To maximize L2 cache hit rate
   const int steps = 1; // Hyperparameter to set execution time 300ms
 
-  float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float));
-  Driver::setDBuf(in, 0.0f, in_size * sizeof(float));
-  spdlog::debug("in_size: {} l2CacheSize: {} stride {} steps {}", in_size, l2CacheSize, stride, steps);
+  float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float), stream);
+  Driver::setDBuf(in, 0.0f, in_size * sizeof(float), stream);
   
   // Fully occupy half of total SMs
   dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);

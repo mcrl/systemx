@@ -5,6 +5,7 @@
 
 #include "spdlog/spdlog.h"
 #include "cuda_runtime.h"
+#include "cublas_v2.h"
 
 #include "utils.hpp"
 
@@ -34,6 +35,10 @@ Driver::~Driver() {
   for (void *ptr : dbufs_) {
     CUDA_CALL(cudaFree(ptr));
   }
+  spdlog::debug("Destroying cuBLAS handles");
+  for (cublasHandle_t handle : cublas_handles_) {
+    CUBLAS_CALL(cublasDestroy(handle));
+  }
 }
 
 cudaStream_t Driver::createStream() {
@@ -43,9 +48,9 @@ cudaStream_t Driver::createStream() {
   return stream;
 }
 
-void *Driver::mallocDBuf(size_t size) {
+void *Driver::mallocDBuf(size_t size, cudaStream_t stream) {
   void *ptr;
-  CUDA_CALL(cudaMalloc(&ptr, size));
+  CUDA_CALL(cudaMallocAsync(&ptr, size, stream));
   dbufs_.push_back(ptr);
   return ptr;
 }
@@ -55,8 +60,15 @@ void Driver::freeDBuf(void *ptr) {
   CUDA_CALL(cudaFree(ptr));
 }
 
-void Driver::setDBuf(void *ptr, int value, size_t count) {
-  CUDA_CALL(cudaMemset(ptr, value, count));
+void Driver::setDBuf(void *ptr, int value, size_t count, cudaStream_t stream) {
+  CUDA_CALL(cudaMemsetAsync(ptr, value, count, stream));
+}
+
+cublasHandle_t Driver::createCublasHandle() {
+  cublasHandle_t handle;
+  CUBLAS_CALL(cublasCreate(&handle));
+  cublas_handles_.push_back(handle);
+  return handle;
 }
 
 void Driver::launchKernel(string kernel) {

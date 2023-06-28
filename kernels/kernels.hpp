@@ -6,6 +6,7 @@
   T(gmemLoad) \
   T(gmemStore) \
   T(l2Load) \
+  T(cublasGemm) \
 
 inline __device__ float mad(const float a, const float b, const float c) {
   return a * b + c;

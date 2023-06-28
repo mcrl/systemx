@@ -75,7 +75,7 @@ void Driver::gmemLoadRun() {
   const int in_size = stride * 1024;
   const int steps = 351; // Hyperparameter to set execution time 300ms
 
-  float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float));
+  float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float), stream);
   
   // Fully occupy half of total SMs
   dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
@@ -97,7 +97,7 @@ void Driver::gmemStoreRun() {
   const int out_size = stride * 1024;
   const int steps = 303; // Hyperparameter to set execution time 300ms
 
-  float *out = (float *)Driver::mallocDBuf(out_size * sizeof(float));
+  float *out = (float *)Driver::mallocDBuf(out_size * sizeof(float), stream);
 
   // Fully occupy half of total SMs
   dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
