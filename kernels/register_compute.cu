@@ -8,7 +8,6 @@
 #include "kernels.hpp"
 
 #define WPT 8 // Hyperparameter to maximize register spilling of local memory
-#define STEPS 100 * 1024 * 8 // Execution time is 100ms
 
 using SYSTEMX::core::Driver;
 
@@ -46,9 +45,11 @@ void Driver::registerComputeRun() {
   const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
   const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
   const int multiProcessorCount = device_properties_.multiProcessorCount;
-  
+
+  const int steps = 100 * 1024 * 8; // Hyperparameter to set execution time 100ms
+
   // Fully occupy half of total SMs
-  dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock, multiProcessorCount / 2, 1);
+  dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock * (multiProcessorCount / 2), 1, 1);
   dim3 blockDim(maxThreadsPerBlock, 1, 1);
 
   srand((unsigned int)time(NULL));
@@ -56,5 +57,5 @@ void Driver::registerComputeRun() {
   float *d = (float *)Driver::mallocDBuf(sizeof(float) * WPT * maxThreadsPerBlock *
                                (maxThreadsPerMultiProcessor / maxThreadsPerBlock) *
                                (multiProcessorCount / 2));
-  register_compute_kernel << <gridDim, blockDim, 0, stream >> > (d, seed, STEPS);
+  register_compute_kernel << <gridDim, blockDim, 0, stream >> > (d, seed, steps);
 }

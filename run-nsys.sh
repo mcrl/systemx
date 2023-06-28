@@ -10,6 +10,7 @@ OUTPUT=/home/n1/junyeol/systemx/profiles/${PROFILE}
 ${NSYS} profile --force-overwrite=true \
                 --trace=cuda,nvtx --stats=true \
                 --sample=process-tree --cpuctxsw=process-tree \
+                --cudabacktrace=all \
                 --output ${OUTPUT} \
                 numactl --physcpubind 0-63 \
                 $@
