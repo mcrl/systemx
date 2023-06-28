@@ -18,6 +18,7 @@ public:
   ~Driver();
   void launchKernel(std::string kernel);
   void *mallocDBuf(size_t size);
+  void setDBuf(void *ptr, int value, size_t count);
   cudaDeviceProp device_properties_;
 
 #define T(op) void op##Run();

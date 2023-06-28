@@ -46,7 +46,7 @@ void Driver::registerComputeRun() {
   const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
   const int multiProcessorCount = device_properties_.multiProcessorCount;
 
-  const int steps = 100 * 1024 * 8; // Hyperparameter to set execution time 100ms
+  const int steps = 2630000; // Hyperparameter to set execution time 300ms
 
   // Fully occupy half of total SMs
   dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock * (multiProcessorCount / 2), 1, 1);

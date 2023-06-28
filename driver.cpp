@@ -55,6 +55,10 @@ void Driver::freeDBuf(void *ptr) {
   CUDA_CALL(cudaFree(ptr));
 }
 
+void Driver::setDBuf(void *ptr, int value, size_t count) {
+  CUDA_CALL(cudaMemset(ptr, value, count));
+}
+
 void Driver::launchKernel(string kernel) {
   if (kernel_map_.find(kernel) == kernel_map_.end()) {
     throw runtime_error("Kernel not found");

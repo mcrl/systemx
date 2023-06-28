@@ -17,7 +17,7 @@ void Driver::idleRun() {
 
   cudaStream_t stream = createStream();
 
-  uint milliseconds = 100;
+  uint milliseconds = 300;
 
   const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
   const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;

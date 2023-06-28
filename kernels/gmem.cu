@@ -73,7 +73,7 @@ void Driver::gmemLoadRun() {
 
   const int stride = l2CacheSize / sizeof(float);
   const int in_size = stride * 1024;
-  const int steps = 117; // Hyperparameter to set execution time 100ms
+  const int steps = 351; // Hyperparameter to set execution time 300ms
 
   float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float));
   
@@ -95,7 +95,7 @@ void Driver::gmemStoreRun() {
 
   const int stride = l2CacheSize / sizeof(float);
   const int out_size = stride * 1024;
-  const int steps = 107; // Hyperparameter to set execution time 100ms
+  const int steps = 303; // Hyperparameter to set execution time 300ms
 
   float *out = (float *)Driver::mallocDBuf(out_size * sizeof(float));
 
