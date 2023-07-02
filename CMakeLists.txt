@@ -35,6 +35,12 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/external/spdlog)
 list(APPEND INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/external/spdlog/include)
 list(APPEND PUBLIC_LIBS spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
 
+## jsoncpp
+add_subdirectory(${PROJECT_SOURCE_DIR}/external/jsoncpp)
+get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
+list(APPEND INCLUDE_DIRECTORIES ${JSON_INC_PATH})
+list(APPEND PUBLIC_LIBS jsoncpp_lib)
+
 ## CUDA
 if(NOT DEFINED CUDA_INSTALL_PATH)
   set(CUDA_INSTALL_PATH "/usr/local/cuda")

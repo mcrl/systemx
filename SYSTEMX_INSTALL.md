@@ -11,7 +11,8 @@ git submodule foreach --recursive "git checkout $(git remote show origin | grep 
 
 # setup external libraries
 cd external
-cd spdlog && git checkout ad0e89c # spdlog release v.1.11.0
+cd spdlog && git checkout ad0e89c && cd .. # spdlog release v.1.11.0
+cd jsoncpp && git checkout 5defb4e && cd .. # jsoncpp release v.1.9.5
 ```
 
 ## Install
