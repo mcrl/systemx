@@ -1,0 +1,14 @@
+{
+  "kernels": [
+    {
+      "op": "idle",
+      "gpu": 0,
+      "stream": 0,
+      "dimGrid": [79,1,1],
+      "dimBlock": [1024,1,1],
+      "events": ["start", "end"],
+      "event_log_map": {"end": "start"},
+      "require_pthread": true
+    }
+  ]
+}

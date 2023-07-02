@@ -32,8 +32,8 @@ add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${CUDA_SOURCES})
 
 ## spdlog
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/spdlog)
-include_directories(${PROJECT_SOURCE_DIR}/external/spdlog/include)
-target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
+list(APPEND INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/external/spdlog/include)
+list(APPEND PUBLIC_LIBS spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
 
 ## CUDA
 if(NOT DEFINED CUDA_INSTALL_PATH)
@@ -42,19 +42,29 @@ endif()
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CMAKE_CUDA_ARCHITECTURES 70)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_ARCHITECTURES 70)
-target_link_libraries(${PROJECT_NAME} PUBLIC cudart cublas)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CUDA_INSTALL_PATH}/include)
-target_link_directories(${PROJECT_NAME} PUBLIC ${CUDA_INSTALL_PATH}/lib64)
+list(APPEND PUBLIC_LIBS cudart cublas)
+list(APPEND INCLUDE_DIRECTORIES ${CUDA_INSTALL_PATH}/include)
+list(APPEND LINK_DIRECTORIES ${CUDA_INSTALL_PATH}/lib64)
 
 # Internal libraries
 
 ## utils
 add_subdirectory(${PROJECT_SOURCE_DIR}/utils)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/utils)
-target_link_libraries(${PROJECT_NAME} PUBLIC utils)
+target_include_directories(utils PRIVATE ${CUDA_INSTALL_PATH}/include)
+target_include_directories(utils PRIVATE ${PROJECT_SOURCE_DIR}/external/spdlog/include)
+list(APPEND INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/utils)
+list(APPEND PUBLIC_LIBS utils)
+
+## others
+list(APPEND PUBLIC_LIBS pthread)
 
 # Target
-target_include_directories(${PROJECT_NAME} PUBLIC 
+list(APPEND INCLUDE_DIRECTORIES
   ${PROJECT_BINARY_DIR}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/kernels)
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIRECTORIES})
+target_link_directories(${PROJECT_NAME} PUBLIC ${LINK_DIRECTORIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${PUBLIC_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PRIVATE_LIBS})
