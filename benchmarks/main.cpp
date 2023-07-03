@@ -40,7 +40,6 @@ int main(int argc, char *argv[]) {
   Json::Value kernel_1_events_log_map;
   kernel_1_events_log_map["end"] = "start";
   kernel_1["events_log_map"] = kernel_1_events_log_map;
-  kernel_1["require_pthreads"] = true;
   kernels.append(kernel_1);
 
 	Json::Value kernel_2;
@@ -66,7 +65,6 @@ int main(int argc, char *argv[]) {
   Json::Value kernel2_events_log_map;
   kernel2_events_log_map["end"] = "start";
   kernel_2["events_log_map"] = kernel2_events_log_map;
-  kernel_2["require_pthreads"] = true;
   kernels.append(kernel_2);
   
   root["kernels"] = kernels;

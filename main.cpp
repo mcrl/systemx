@@ -99,11 +99,14 @@ int main(int argc, char *argv[])
         event_log_map[iter2.key().asString()] = (*iter2).asString();
       }
     }
-    auto require_pthreads = (*iter)["require_pthreads"].asBool();
 
-    // lazy init driver
     for (uint gpu : gpus) {
       spdlog::info("Launch Kernel {0} on GPU {1}", op, gpu);
+      
+      // lazy init driver
+      if (driver_map.find(gpu) == driver_map.end()) {
+        driver_map[gpu] = new Driver(gpu);
+      }
       // driver->launchKernel(kernel);
     }
   }

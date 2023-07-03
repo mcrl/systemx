@@ -9,7 +9,6 @@
          },
          "gpus" : [ 0 ],
          "op" : "idle",
-         "require_pthreads" : true,
          "stream" : 0
       },
       {
@@ -21,7 +20,6 @@
          },
          "gpus" : [ 0 ],
          "op" : "idle",
-         "require_pthreads" : true,
          "stream" : 1
       }
    ]
