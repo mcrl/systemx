@@ -37,9 +37,6 @@ int main(int argc, char *argv[]) {
   kernel_1_events.append("start");
   kernel_1_events.append("end");
   kernel_1["events"] = kernel_1_events;
-  Json::Value kernel_1_events_log_map;
-  kernel_1_events_log_map["end"] = "start";
-  kernel_1["events_log_map"] = kernel_1_events_log_map;
   kernels.append(kernel_1);
 
 	Json::Value kernel_2;
@@ -54,7 +51,7 @@ int main(int argc, char *argv[]) {
   kernel_2_dimGrid.append(1);
   kernel_2["dimGrid"] = kernel_2_dimGrid;
   Json::Value kernel_2_dimBlock;
-  kernel_2_dimBlock.append(32);
+  kernel_2_dimBlock.append(33);
   kernel_2_dimBlock.append(1);
   kernel_2_dimBlock.append(1);
   kernel_2["dimBlock"] = kernel_2_dimBlock;
@@ -62,9 +59,6 @@ int main(int argc, char *argv[]) {
   kernel_2_events.append("start");
   kernel_2_events.append("end");
   kernel_2["events"] = kernel_2_events;
-  Json::Value kernel2_events_log_map;
-  kernel2_events_log_map["end"] = "start";
-  kernel_2["events_log_map"] = kernel2_events_log_map;
   kernels.append(kernel_2);
   
   root["kernels"] = kernels;

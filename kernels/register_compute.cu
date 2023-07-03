@@ -37,25 +37,26 @@ __global__ void register_compute_kernel(float *d, const float seed, const int st
   }
 }
 
-void Driver::registerComputeRun() {
+// TODO: Refactor
+void Driver::registerComputeRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = createStream();
+  cudaStream_t stream = args->stream;
 
-  const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  const int multiProcessorCount = device_properties_.multiProcessorCount;
+  // const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
+  // const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
+  // const int multiProcessorCount = device_properties_.multiProcessorCount;
 
-  const int steps = 2435185; // Hyperparameter to set execution time 300ms
+  // const int steps = 2435185; // Hyperparameter to set execution time 300ms
 
-  // Fully occupy half of total SMs
-  dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock * (multiProcessorCount / 2), 1, 1);
-  dim3 blockDim(maxThreadsPerBlock, 1, 1);
+  // // Fully occupy half of total SMs
+  // dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock * (multiProcessorCount / 2), 1, 1);
+  // dim3 blockDim(maxThreadsPerBlock, 1, 1);
 
-  srand((unsigned int)time(NULL));
-  const int seed = rand();
-  float *d = (float *)Driver::mallocDBuf(sizeof(float) * WPT * maxThreadsPerBlock *
-                               (maxThreadsPerMultiProcessor / maxThreadsPerBlock) *
-                               (multiProcessorCount / 2), stream);
-  register_compute_kernel << <gridDim, blockDim, 0, stream >> > (d, seed, steps);
+  // srand((unsigned int)time(NULL));
+  // const int seed = rand();
+  // float *d = (float *)Driver::mallocDBuf(sizeof(float) * WPT * maxThreadsPerBlock *
+  //                              (maxThreadsPerMultiProcessor / maxThreadsPerBlock) *
+  //                              (multiProcessorCount / 2), stream);
+  // register_compute_kernel << <gridDim, blockDim, 0, stream >> > (d, seed, steps);
 }

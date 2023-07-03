@@ -42,25 +42,26 @@ __global__ void l2_load_kernel(float *in, const int in_size, const int l2_cache_
   }
 }
 
-void Driver::l2LoadRun() {
+// TODO: Refactor
+void Driver::l2LoadRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = createStream();
+  cudaStream_t stream = args->stream;
 
-  const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  const int multiProcessorCount = device_properties_.multiProcessorCount;
-  const int l2CacheSize = device_properties_.l2CacheSize;
+  // const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
+  // const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
+  // const int multiProcessorCount = device_properties_.multiProcessorCount;
+  // const int l2CacheSize = device_properties_.l2CacheSize;
 
-  const int stride = device_properties_.warpSize; 
-  const int in_size = l2CacheSize; // To maximize L2 cache hit rate
-  const int steps = 1; // Hyperparameter to set execution time 300ms
+  // const int stride = device_properties_.warpSize; 
+  // const int in_size = l2CacheSize; // To maximize L2 cache hit rate
+  // const int steps = 1; // Hyperparameter to set execution time 300ms
 
-  float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float), stream);
-  Driver::setDBuf(in, 0.0f, in_size * sizeof(float), stream);
+  // float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float), stream);
+  // Driver::setDBuf(in, 0.0f, in_size * sizeof(float), stream);
   
-  // Fully occupy half of total SMs
-  dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
-  dim3 blockDim(maxThreadsPerBlock, 1, 1);
-  l2_load_kernel << <gridDim, blockDim, 0, stream >> > (in, in_size, l2CacheSize, stride, steps);
+  // // Fully occupy half of total SMs
+  // dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
+  // dim3 blockDim(maxThreadsPerBlock, 1, 1);
+  // l2_load_kernel << <gridDim, blockDim, 0, stream >> > (in, in_size, l2CacheSize, stride, steps);
 }

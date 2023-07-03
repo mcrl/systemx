@@ -94,12 +94,6 @@ int main(int argc, char *argv[])
     auto _dimGrid = asVector<uint>((*iter)["dimGrid"]);
     auto _dimBlock = asVector<uint>((*iter)["dimGrid"]);
     auto _events = asVector<string>((*iter)["events"]);
-    map<string, string> _events_log_map;
-    if ((*iter)["events_log_map"].isObject()) {
-      for (Json::ValueIterator iter2 = (*iter)["events_log_map"].begin(); iter2 != (*iter)["events_log_map"].end(); iter2++) {
-        _events_log_map[iter2.key().asString()] = (*iter2).asString();
-      }
-    }
 
     for (uint gpu : _gpus) {
       CUDA_CALL(cudaSetDevice(gpu));
@@ -107,8 +101,8 @@ int main(int argc, char *argv[])
       // lazy init driver
       if (driver_map.find(gpu) == driver_map.end()) {
         driver_map[gpu] = new Driver(gpu);
-      }
-
+      } 
+      
       // init kernel_run_args
       kernel_run_args *kargs = new kernel_run_args;
       kargs->stream = driver_map[gpu]->getStream(_stream);
@@ -123,10 +117,6 @@ int main(int argc, char *argv[])
         event_tuple_t event(_event, _);
         _event_map[_event] = event;
         kargs->events.push_back(event);
-      }
-      // fill in events_log_map
-      for (const auto &[key, value] : _events_log_map) {
-        kargs->events_log_map[_event_map[key]] = _event_map[value];
       }
       
       spdlog::info("Launch Kernel {0} on GPU {1}", _op, gpu);

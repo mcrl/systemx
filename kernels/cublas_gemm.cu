@@ -8,10 +8,11 @@
 
 using SYSTEMX::core::Driver;
 
-void Driver::cublasGemmRun() {
+// TODO: Refactor
+void Driver::cublasGemmRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = createStream();
+  cudaStream_t stream = args->stream;
 
   cublasHandle_t handle = createCublasHandle();
   CUBLAS_CALL(cublasSetStream(handle, stream));

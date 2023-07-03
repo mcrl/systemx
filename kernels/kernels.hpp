@@ -14,6 +14,8 @@
   T(l2Load) \
   T(cublasGemm) \
 
+#define FUNC_NAME(f) #f
+
 typedef std::tuple<std::string, cudaEvent_t> event_tuple_t;
 
 struct kernel_run_args {
@@ -21,7 +23,6 @@ struct kernel_run_args {
   dim3 dimGrid;
   dim3 dimBlock;
   std::vector<event_tuple_t> events;
-  std::map<event_tuple_t, event_tuple_t> events_log_map;
 };
 
 inline __device__ float mad(const float a, const float b, const float c) {

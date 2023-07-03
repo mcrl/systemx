@@ -14,7 +14,8 @@
 namespace SYSTEMX {
 namespace core {
 
-Driver::Driver(int gpu_index) {
+Driver::Driver(uint gpu_index) {
+  spdlog::debug("Creating driver for GPU {0}", gpu_index);
   gpu_index_ = gpu_index;
   CUDA_CALL(cudaSetDevice(gpu_index_));
   CUDA_CALL(cudaGetDeviceProperties(&device_properties_, gpu_index_));
@@ -78,12 +79,24 @@ cublasHandle_t Driver::createCublasHandle() {
   return handle;
 }
 
+void Driver::assertDeviceCorrect() {
+  int device;
+  CUDA_CALL(cudaGetDevice(&device));
+  if ((uint)device != gpu_index_) {
+    throw runtime_error("Device not correct");
+  }
+}
+
 void Driver::launchKernel(std::string kernel, kernel_run_args *kargs) {
   if (kernel_map_.find(kernel) == kernel_map_.end()) {
     throw runtime_error("Kernel not found");
   }
 
-  std::thread t(kernel_map_[kernel], kargs);
+  // bind Driver::gpu_index_ to thread & launch thread kernel 
+  std::thread t([&](kernel_run_args *args) {
+    CUDA_CALL(cudaSetDevice(this->gpu_index_));
+    this->kernel_map_[kernel](args);
+  }, kargs);
   threads_.push_back(std::move(t));
 }
 }

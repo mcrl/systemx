@@ -61,46 +61,48 @@ __global__ void gmem_store_kernel(float *out,
   }
 }
 
-void Driver::gmemLoadRun() {
+// TODO: Refactor
+void Driver::gmemLoadRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = createStream();
+  cudaStream_t stream = args->stream;
 
-  const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  const int multiProcessorCount = device_properties_.multiProcessorCount;
-  const int l2CacheSize = device_properties_.l2CacheSize;
+  // const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
+  // const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
+  // const int multiProcessorCount = device_properties_.multiProcessorCount;
+  // const int l2CacheSize = device_properties_.l2CacheSize;
 
-  const int stride = l2CacheSize / sizeof(float);
-  const int in_size = stride * 1024;
-  const int steps = 351; // Hyperparameter to set execution time 300ms
+  // const int stride = l2CacheSize / sizeof(float);
+  // const int in_size = stride * 1024;
+  // const int steps = 351; // Hyperparameter to set execution time 300ms
 
-  float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float), stream);
+  // float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float), stream);
   
-  // Fully occupy half of total SMs
-  dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
-  dim3 blockDim(maxThreadsPerBlock, 1, 1);
-  gmem_load_kernel << <gridDim, blockDim, 0, stream >> > (in, in_size, stride, steps);
+  // // Fully occupy half of total SMs
+  // dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
+  // dim3 blockDim(maxThreadsPerBlock, 1, 1);
+  // gmem_load_kernel << <gridDim, blockDim, 0, stream >> > (in, in_size, stride, steps);
 }
 
-void Driver::gmemStoreRun() {
+// TODO: Refactor
+void Driver::gmemStoreRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = createStream();
+  cudaStream_t stream = args->stream;
 
-  const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  const int multiProcessorCount = device_properties_.multiProcessorCount;
-  const int l2CacheSize = device_properties_.l2CacheSize;
+  // const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
+  // const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
+  // const int multiProcessorCount = device_properties_.multiProcessorCount;
+  // const int l2CacheSize = device_properties_.l2CacheSize;
 
-  const int stride = l2CacheSize / sizeof(float);
-  const int out_size = stride * 1024;
-  const int steps = 303; // Hyperparameter to set execution time 300ms
+  // const int stride = l2CacheSize / sizeof(float);
+  // const int out_size = stride * 1024;
+  // const int steps = 303; // Hyperparameter to set execution time 300ms
 
-  float *out = (float *)Driver::mallocDBuf(out_size * sizeof(float), stream);
+  // float *out = (float *)Driver::mallocDBuf(out_size * sizeof(float), stream);
 
-  // Fully occupy half of total SMs
-  dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
-  dim3 blockDim(maxThreadsPerBlock, 1, 1);
-  gmem_store_kernel << <gridDim, blockDim, 0, stream >> > (out, out_size, stride, steps);
+  // // Fully occupy half of total SMs
+  // dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
+  // dim3 blockDim(maxThreadsPerBlock, 1, 1);
+  // gmem_store_kernel << <gridDim, blockDim, 0, stream >> > (out, out_size, stride, steps);
 }

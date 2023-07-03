@@ -1,8 +1,11 @@
+#include <tuple>
+
 #include "spdlog/spdlog.h"
 #include "cuda_runtime.h"
 
 #include "driver.hpp"
 #include "kernels.hpp"
+#include "utils.hpp"
 
 using SYSTEMX::core::Driver;
 
@@ -15,7 +18,20 @@ __global__ void idle_kernel(uint milliseconds) {
 void Driver::idleRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
+  assertDeviceCorrect();
+
   uint milliseconds = 300;
-  // TODO: add events
+
+  cudaEvent_t start, end;
+  start = std::get<1>(args->events[0]);
+  end = std::get<1>(args->events[1]);
+
+  CUDA_CALL(cudaEventRecord(start, args->stream));
   idle_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (milliseconds);
+  CUDA_CALL(cudaEventRecord(end, args->stream));
+
+  float elapsed_time = 0;
+  CUDA_CALL(cudaEventSynchronize(end));
+  CUDA_CALL(cudaEventElapsedTime(&elapsed_time, start, end));
+  spdlog::info("Kernel {} took {} ms", FUNC_NAME(idle_kernel), elapsed_time);
 }
