@@ -41,10 +41,6 @@ Driver::~Driver() {
   for (void *ptr : dbufs_) {
     CUDA_CALL(cudaFree(ptr));
   }
-  spdlog::debug("Destroying cuBLAS handles");
-  for (cublasHandle_t handle : cublas_handles_) {
-    CUBLAS_CALL(cublasDestroy(handle));
-  }
 }
 
 cudaStream_t Driver::getStream(uint stream_id) {
@@ -70,13 +66,6 @@ void Driver::freeDBuf(void *ptr) {
 
 void Driver::setDBuf(void *ptr, int value, size_t count, cudaStream_t stream) {
   CUDA_CALL(cudaMemsetAsync(ptr, value, count, stream));
-}
-
-cublasHandle_t Driver::createCublasHandle() {
-  cublasHandle_t handle;
-  CUBLAS_CALL(cublasCreate(&handle));
-  cublas_handles_.push_back(handle);
-  return handle;
 }
 
 void Driver::assertDeviceCorrect() {
