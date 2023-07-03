@@ -1,9 +1,9 @@
 #include "driver.hpp"
 
-#include <pthread.h>
-
 #include <functional>
 #include <map>
+#include <string>
+#include <thread>
 
 #include "spdlog/spdlog.h"
 #include "cuda_runtime.h"
@@ -19,14 +19,17 @@ Driver::Driver(int gpu_index) {
   CUDA_CALL(cudaSetDevice(gpu_index_));
   CUDA_CALL(cudaGetDeviceProperties(&device_properties_, gpu_index_));
 
-// #define T(op) kernel_map_[#op] = std::bind(&Driver::op##Run, this);
-#define T(op) kernel_map_[#op] = [&]{this->op##Run();};
+#define T(op) kernel_map_[#op] = [&](kernel_run_args *args){return this->op##Run(args);};
   KERNELS()
 #undef T
 }
 
 Driver::~Driver() {
   spdlog::debug("Destroying driver");
+
+  for (std::thread &t : threads_) {
+    t.join();
+  }
   
   spdlog::debug("Destroying streams");
   for (const auto &[id, stream] : stream_map_) {
@@ -42,9 +45,6 @@ Driver::~Driver() {
     CUBLAS_CALL(cublasDestroy(handle));
   }
 }
-
-// TODO: deprecated
-cudaStream_t Driver::createStream() {}
 
 cudaStream_t Driver::getStream(uint stream_id) {
   if (stream_map_.find(stream_id) == stream_map_.end()) {
@@ -78,16 +78,13 @@ cublasHandle_t Driver::createCublasHandle() {
   return handle;
 }
 
-void Driver::launchKernel(string kernel, kernel_run_args args) {
+void Driver::launchKernel(std::string kernel, kernel_run_args *kargs) {
   if (kernel_map_.find(kernel) == kernel_map_.end()) {
     throw runtime_error("Kernel not found");
   }
 
-  pthread_t thread;
-  // if (pthread_create(&thread, NULL, &kernel_map_[kernel], reinterpret_cast<void *>(&args)) != 0) {
-  //   throw runtime_error("Failed to launch kernel");
-  // }
-  // kernel_map_[kernel]();
+  std::thread t(kernel_map_[kernel], kargs);
+  threads_.push_back(std::move(t));
 }
 }
 }

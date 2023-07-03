@@ -66,9 +66,6 @@ list(APPEND PUBLIC_LIBS utils)
 ## benchmarks
 add_subdirectory(${PROJECT_SOURCE_DIR}/benchmarks)
 
-## others
-list(APPEND PUBLIC_LIBS pthread)
-
 # Target
 list(APPEND INCLUDE_DIRECTORIES
   ${PROJECT_BINARY_DIR}

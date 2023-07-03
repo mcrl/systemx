@@ -10,17 +10,6 @@
          "gpus" : [ 0 ],
          "op" : "idle",
          "stream" : 0
-      },
-      {
-         "dimBlock" : [ 33, 1, 1 ],
-         "dimGrid" : [ 16, 1, 1 ],
-         "events" : [ "start", "end" ],
-         "events_log_map" : {
-            "end" : "start"
-         },
-         "gpus" : [ 0 ],
-         "op" : "idle",
-         "stream" : 1
       }
    ]
 }

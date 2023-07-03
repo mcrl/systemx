@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
       }
 
       // init kernel_run_args
-      kernel_run_args kargs;
-      kargs.stream = driver_map[gpu]->getStream(_stream);
-      kargs.dimGrid = dim3(_dimGrid[0], _dimGrid[1], _dimGrid[2]);
-      kargs.dimBlock = dim3(_dimBlock[0], _dimBlock[1], _dimBlock[2]);
+      kernel_run_args *kargs = new kernel_run_args;
+      kargs->stream = driver_map[gpu]->getStream(_stream);
+      kargs->dimGrid = dim3(_dimGrid[0], _dimGrid[1], _dimGrid[2]);
+      kargs->dimBlock = dim3(_dimBlock[0], _dimBlock[1], _dimBlock[2]);
 
       // init events
       map<string, event_tuple_t> _event_map; // temporary data structure
@@ -122,15 +122,15 @@ int main(int argc, char *argv[])
         CUDA_CALL(cudaEventCreate(&_));
         event_tuple_t event(_event, _);
         _event_map[_event] = event;
-        kargs.events.push_back(event);
+        kargs->events.push_back(event);
       }
       // fill in events_log_map
       for (const auto &[key, value] : _events_log_map) {
-        kargs.events_log_map[_event_map[key]] = _event_map[value];
+        kargs->events_log_map[_event_map[key]] = _event_map[value];
       }
       
-      // driver->launchKernel(kernel);
       spdlog::info("Launch Kernel {0} on GPU {1}", _op, gpu);
+      driver_map[gpu]->launchKernel(_op, kargs);
     }
   }
 

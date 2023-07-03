@@ -12,19 +12,10 @@ __global__ void idle_kernel(uint milliseconds) {
   }
 }
 
-void Driver::idleRun() {
+void Driver::idleRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = createStream();
-
   uint milliseconds = 300;
-
-  const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  const int multiProcessorCount = device_properties_.multiProcessorCount;
-
-  // Fully occupy half of total SMs
-  dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
-  dim3 blockDim(maxThreadsPerBlock, 1, 1);
-  idle_kernel << <gridDim, blockDim, 0, stream >> > (milliseconds);
+  // TODO: add events
+  idle_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (milliseconds);
 }
