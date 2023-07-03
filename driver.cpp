@@ -1,5 +1,7 @@
 #include "driver.hpp"
 
+#include <pthread.h>
+
 #include <functional>
 #include <map>
 
@@ -27,7 +29,7 @@ Driver::~Driver() {
   spdlog::debug("Destroying driver");
   
   spdlog::debug("Destroying streams");
-  for (cudaStream_t stream : streams_) {
+  for (const auto &[id, stream] : stream_map_) {
     CUDA_CALL(cudaStreamSynchronize(stream));
     CUDA_CALL(cudaStreamDestroy(stream));
   }
@@ -41,11 +43,16 @@ Driver::~Driver() {
   }
 }
 
-cudaStream_t Driver::createStream() {
-  cudaStream_t stream;
-  CUDA_CALL(cudaStreamCreate(&stream));
-  streams_.push_back(stream);
-  return stream;
+// TODO: deprecated
+cudaStream_t Driver::createStream() {}
+
+cudaStream_t Driver::getStream(uint stream_id) {
+  if (stream_map_.find(stream_id) == stream_map_.end()) {
+    cudaStream_t stream;
+    CUDA_CALL(cudaStreamCreate(&stream));
+    stream_map_[stream_id] = stream;
+  }
+  return stream_map_[stream_id];
 }
 
 void *Driver::mallocDBuf(size_t size, cudaStream_t stream) {
@@ -71,11 +78,16 @@ cublasHandle_t Driver::createCublasHandle() {
   return handle;
 }
 
-void Driver::launchKernel(string kernel) {
+void Driver::launchKernel(string kernel, kernel_run_args args) {
   if (kernel_map_.find(kernel) == kernel_map_.end()) {
     throw runtime_error("Kernel not found");
   }
-  kernel_map_[kernel]();
+
+  pthread_t thread;
+  // if (pthread_create(&thread, NULL, &kernel_map_[kernel], reinterpret_cast<void *>(&args)) != 0) {
+  //   throw runtime_error("Failed to launch kernel");
+  // }
+  // kernel_map_[kernel]();
 }
 }
 }

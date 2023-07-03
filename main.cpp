@@ -12,6 +12,7 @@
 #include "systemxConfig.hpp"
 #include "utils.hpp"
 #include "driver.hpp"
+#include "kernels.hpp"
 
 using namespace SYSTEMX::utils;
 using namespace SYSTEMX::core;
@@ -87,66 +88,54 @@ int main(int argc, char *argv[])
 
   Json::Value kernels = root["kernels"];
   for (Json::ValueIterator iter = kernels.begin(); iter != kernels.end(); iter++) {
-    auto op = (*iter)["op"].asString();
-    auto gpus = asVector<uint>((*iter)["gpus"]);
-    auto stream = (*iter)["stream"].asUInt();
-    auto dimGrid = asVector<uint>((*iter)["dimGrid"]);
-    auto dimBlock = asVector<uint>((*iter)["dimGrid"]);
-    auto events = asVector<string>((*iter)["events"]);
-    map<string, string> event_log_map;
-    if ((*iter)["event_log_map"].isObject()) {
-      for (Json::ValueIterator iter2 = (*iter)["event_log_map"].begin(); iter2 != (*iter)["event_log_map"].end(); iter2++) {
-        event_log_map[iter2.key().asString()] = (*iter2).asString();
+    auto _op = (*iter)["op"].asString();
+    auto _gpus = asVector<uint>((*iter)["gpus"]);
+    auto _stream = (*iter)["stream"].asUInt();
+    auto _dimGrid = asVector<uint>((*iter)["dimGrid"]);
+    auto _dimBlock = asVector<uint>((*iter)["dimGrid"]);
+    auto _events = asVector<string>((*iter)["events"]);
+    map<string, string> _events_log_map;
+    if ((*iter)["events_log_map"].isObject()) {
+      for (Json::ValueIterator iter2 = (*iter)["events_log_map"].begin(); iter2 != (*iter)["events_log_map"].end(); iter2++) {
+        _events_log_map[iter2.key().asString()] = (*iter2).asString();
       }
     }
 
-    for (uint gpu : gpus) {
-      spdlog::info("Launch Kernel {0} on GPU {1}", op, gpu);
+    for (uint gpu : _gpus) {
+      CUDA_CALL(cudaSetDevice(gpu));
       
       // lazy init driver
       if (driver_map.find(gpu) == driver_map.end()) {
         driver_map[gpu] = new Driver(gpu);
       }
+
+      // init kernel_run_args
+      kernel_run_args kargs;
+      kargs.stream = driver_map[gpu]->getStream(_stream);
+      kargs.dimGrid = dim3(_dimGrid[0], _dimGrid[1], _dimGrid[2]);
+      kargs.dimBlock = dim3(_dimBlock[0], _dimBlock[1], _dimBlock[2]);
+
+      // init events
+      map<string, event_tuple_t> _event_map; // temporary data structure
+      for (string _event : _events) {
+        cudaEvent_t _;
+        CUDA_CALL(cudaEventCreate(&_));
+        event_tuple_t event(_event, _);
+        _event_map[_event] = event;
+        kargs.events.push_back(event);
+      }
+      // fill in events_log_map
+      for (const auto &[key, value] : _events_log_map) {
+        kargs.events_log_map[_event_map[key]] = _event_map[value];
+      }
+      
       // driver->launchKernel(kernel);
+      spdlog::info("Launch Kernel {0} on GPU {1}", _op, gpu);
     }
   }
-  // int gpu_index = 0;
-  // vector<string> kernels;
-
-  // Driver *driver;
-
-  // // process command line args
-  // if (checkCmdLineFlag(argc, (const char**)argv, "gpu")) {
-  //   gpu_index = getCmdLineArgumentInt(argc, (const char **)argv, "gpu");
-  // } else {
-  //   gpu_index = 0;
-  // }
-  // if (gpu_index < ngpus) {
-  //   driver = new Driver(gpu_index);
-  //   spdlog::info("Using GPU {0}", gpu_index);
-  // } else {
-  //   throw runtime_error("GPU index out of range");
-  // }
-
-  // if (checkCmdLineFlag(argc, (const char **)argv, "kernels")) {
-  //   char *_kernels;
-  //   if (getCmdLineArgumentString(argc, (const char **)argv, "kernels", &_kernels)) {
-  //     kernels = stringSplit(string(_kernels), ",");
-
-  //     for (string kernel : kernels) {
-  //       spdlog::info("Launching kernel {0}", kernel);
-  //       // TODO: create thread to launch kernel
-  //       driver->launchKernel(kernel);
-  //     }
-  //   } else {
-  //     throw runtime_error("No kernels specified");
-  //   }
-  // } else {
-  //   throw runtime_error("No kernels specified");
-  // }
 
   // cleanup driver
-  for (const auto& [id, driver] : driver_map) {
+  for (const auto &[id, driver] : driver_map) {
     delete driver;
   }
 
