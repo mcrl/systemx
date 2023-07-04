@@ -6,12 +6,14 @@
 
 #include "driver.hpp"
 #include "kernels.hpp"
+#include "utils.hpp"
 
 #define WPT 8 // Hyperparameter to maximize register spilling of local memory
+#define STEPS 12000000
 
 using SYSTEMX::core::Driver;
 
-__global__ void register_compute_kernel(float *d, const float seed, const int steps) {  
+__global__ void register_compute_kernel(float *d, const float seed) {  
   float tmps[WPT];
   int id = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -19,7 +21,7 @@ __global__ void register_compute_kernel(float *d, const float seed, const int st
   for (int i = 0; i < WPT; i++) {
     tmps[i] = id / 3.0f; // some random initialization to avoid gmem access
 #pragma unroll
-    for (int j = 0; j < steps; j++) {
+    for (int j = 0; j < STEPS; j++) {
       tmps[i] = mad(tmps[i], tmps[i], seed);
     }
   }
@@ -37,25 +39,32 @@ __global__ void register_compute_kernel(float *d, const float seed, const int st
   }
 }
 
-void Driver::registerComputeRun() {
+void Driver::registerComputeRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
-
-  cudaStream_t stream = createStream();
-
-  const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  const int multiProcessorCount = device_properties_.multiProcessorCount;
-
-  const int steps = 2435185; // Hyperparameter to set execution time 300ms
-
-  // Fully occupy half of total SMs
-  dim3 gridDim(maxThreadsPerMultiProcessor / maxThreadsPerBlock * (multiProcessorCount / 2), 1, 1);
-  dim3 blockDim(maxThreadsPerBlock, 1, 1);
 
   srand((unsigned int)time(NULL));
   const int seed = rand();
-  float *d = (float *)Driver::mallocDBuf(sizeof(float) * WPT * maxThreadsPerBlock *
-                               (maxThreadsPerMultiProcessor / maxThreadsPerBlock) *
-                               (multiProcessorCount / 2), stream);
-  register_compute_kernel << <gridDim, blockDim, 0, stream >> > (d, seed, steps);
+
+  float *d_in;
+  CUDA_CALL(cudaMallocAsync(&d_in, args->dimGrid.x * args->dimBlock.x * sizeof(float), args->stream)); 
+
+  cudaEvent_t start, end;
+  start = std::get<1>(args->events[0]);
+  end = std::get<1>(args->events[1]);
+
+  float elapsed_ms;
+  CUDA_CALL(cudaEventRecord(start, args->stream));
+  register_compute_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, seed);
+  CUDA_CALL(cudaEventRecord(end, args->stream));
+  CUDA_CALL(cudaEventSynchronize(end));
+  CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
+
+  const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
+  double gflops = 2.0 * (STEPS * WPT + WPT) * total_threads / elapsed_ms * 1e3 / 1e9;
+  spdlog::info("{}(id: {}) {:.2f} Gflops", FUNC_NAME(register_compute_kernel), args->id, gflops);
+
+  // cleanup
+  CUDA_CALL(cudaFree(d_in));
+  CUDA_CALL(cudaEventDestroy(start));
+  CUDA_CALL(cudaEventDestroy(end));
 }

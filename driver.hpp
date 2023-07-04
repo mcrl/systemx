@@ -4,6 +4,7 @@
 #include <string>
 #include <functional>
 #include <map>
+#include <thread>
 
 #include "cuda_runtime.h"
 #include "cublas_v2.h"
@@ -15,25 +16,24 @@ namespace core {
 
 class Driver {
 public:
-  Driver(int gpu_index);
+  Driver(uint gpu_index);
   ~Driver();
-  void launchKernel(std::string kernel);
-  void *mallocDBuf(size_t size, cudaStream_t stream);
-  void setDBuf(void *ptr, int value, size_t count, cudaStream_t stream);
-  cublasHandle_t createCublasHandle();
+  cudaStream_t getStream(uint stream_id, int stream_priority);
+  void launchKernel(std::string kernel, kernel_run_args *kargs);
+  void assertDeviceCorrect();
   cudaDeviceProp device_properties_;
-#define T(op) void op##Run();
+#define T(op) void op##Run(kernel_run_args *args);
   KERNELS()
 #undef T
 
 private:
-  int gpu_index_;
-  std::vector<cudaStream_t> streams_;
-  std::map<std::string, std::function<void(void)>> kernel_map_;
-  cudaStream_t createStream();
-  void freeDBuf(void *ptr);
-  std::vector<void *> dbufs_;
-  std::vector<cublasHandle_t> cublas_handles_;
+  uint gpu_index_;
+  std::map<std::string, std::function<void(kernel_run_args *)>> kernel_map_;
+  std::vector<std::thread> threads_;
+  std::map<uint, cudaStream_t> stream_map_; // key is set to the "logical" stream id 
+                                            // given from benchmark json, not the
+                                            // "physical" cuda stream id which can be
+                                            // queried with `cudaStreamGetId`
 };
 }
 }
