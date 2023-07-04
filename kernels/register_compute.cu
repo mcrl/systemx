@@ -9,7 +9,7 @@
 #include "utils.hpp"
 
 #define WPT 8 // Hyperparameter to maximize register spilling of local memory
-#define STEPS 2435185
+#define STEPS 12000000
 
 using SYSTEMX::core::Driver;
 
@@ -59,11 +59,12 @@ void Driver::registerComputeRun(kernel_run_args *args) {
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
-  // FMA instruction is 2 flop
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
-  uint64_t gflops = 2.0 * (STEPS * WPT + WPT) * total_threads / elapsed_ms * 1e3 / 1e9;
-  spdlog::info("{}(id: {}) {:d} Gflops", "FUNC_NAME(register_compute_kernel", args->id, gflops);
+  double gflops = 2.0 * (STEPS * WPT + WPT) * total_threads / elapsed_ms * 1e3 / 1e9;
+  spdlog::info("{}(id: {}) {:.2f} Gflops", FUNC_NAME(register_compute_kernel), args->id, gflops);
 
   // cleanup
   CUDA_CALL(cudaFree(d_in));
+  CUDA_CALL(cudaEventDestroy(start));
+  CUDA_CALL(cudaEventDestroy(end));
 }

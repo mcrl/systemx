@@ -48,21 +48,6 @@ cudaStream_t Driver::getStream(uint stream_id) {
   return stream_map_[stream_id];
 }
 
-// void *Driver::mallocDBuf(size_t size, cudaStream_t stream) {
-//   void *ptr;
-//   CUDA_CALL(cudaMallocAsync(&ptr, size, stream));
-//   return ptr;
-// }
-
-// // Explicitly called at destructor to free all device buffers
-// void Driver::freeDBuf(void *ptr) {
-//   CUDA_CALL(cudaFree(ptr));
-// }
-
-// void Driver::setDBuf(void *ptr, int value, size_t count, cudaStream_t stream) {
-//   CUDA_CALL(cudaMemsetAsync(ptr, value, count, stream));
-// }
-
 void Driver::assertDeviceCorrect() {
   int device;
   CUDA_CALL(cudaGetDevice(&device));

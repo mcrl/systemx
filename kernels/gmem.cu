@@ -6,16 +6,18 @@
 
 using SYSTEMX::core::Driver;
 
-__global__ void gmem_load_kernel(float *in, const int in_size,
-                                 const int stride, const int steps) {
+#define GMEM_STORE_STEPS 4500
+#define GMEM_LOAD_STEPS 1750
+
+__global__ void gmem_load_kernel(float *in, const int in_size, const int stride) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
   
   // To avoid kernel optimization
   float sum = int2floatCast(0);
-  for (int i = 0; i < steps; i++) {
+  for (int i = 0; i < GMEM_LOAD_STEPS; i++) {
     int idx = id;
     
-    for (; idx < in_size;) {
+    for (int j = 0; j < in_size / stride; j++) {
       register float tmp;
       // load from gmem bypassing l1 cache
       asm volatile(
@@ -26,7 +28,7 @@ __global__ void gmem_load_kernel(float *in, const int in_size,
         : "l"(&in[idx])
         : "memory");
       sum += tmp;
-      idx += stride;
+      idx = (idx + stride) % in_size;
     }
   }
   
@@ -36,17 +38,15 @@ __global__ void gmem_load_kernel(float *in, const int in_size,
   }
 }
 
-__global__ void gmem_store_kernel(float *out,
-                                  const int out_size, const int stride,
-                                  const int steps) {
+__global__ void gmem_store_kernel(float *out, const int out_size, const int stride) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
 
   // To avoid kernel optimization
   register float src = int2floatCast(0);
-  for (int i = 0; i < steps; i++) {
+  for (int i = 0; i < GMEM_STORE_STEPS; i++) {
     int idx = id;
     
-    for (; idx < out_size;) {
+    for (int j = 0; j < out_size / stride; j++) {
       register float *out_ptr = &out[idx];
       // store to gmem bypassing l1 cache
       asm volatile(
@@ -56,53 +56,75 @@ __global__ void gmem_store_kernel(float *out,
         : "+l"(out_ptr)
         : "f"(src)
         : "memory");
-      idx += stride;
+      idx = (idx + stride) % out_size;
     }
   }
 }
 
-// TODO: Refactor
 void Driver::gmemLoadRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = args->stream;
+  const int l2CacheSize = device_properties_.l2CacheSize;
+  const int stride = l2CacheSize / sizeof(float);
+  const int intra_step_access_per_thread = 1024;
+  const int in_size = stride * intra_step_access_per_thread;
 
-  // const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  // const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  // const int multiProcessorCount = device_properties_.multiProcessorCount;
-  // const int l2CacheSize = device_properties_.l2CacheSize;
+  float *d_in;
+  CUDA_CALL(cudaMallocAsync(&d_in, in_size * sizeof(float), args->stream));
 
-  // const int stride = l2CacheSize / sizeof(float);
-  // const int in_size = stride * 1024;
-  // const int steps = 351; // Hyperparameter to set execution time 300ms
-
-  // float *in = (float *)Driver::mallocDBuf(in_size * sizeof(float), stream);
+  cudaEvent_t start, end;
+  start = std::get<1>(args->events[0]);
+  end = std::get<1>(args->events[1]);
   
-  // // Fully occupy half of total SMs
-  // dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
-  // dim3 blockDim(maxThreadsPerBlock, 1, 1);
-  // gmem_load_kernel << <gridDim, blockDim, 0, stream >> > (in, in_size, stride, steps);
+  float elapsed_ms;
+  CUDA_CALL(cudaEventRecord(start, args->stream));
+  gmem_load_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, in_size, stride);
+  CUDA_CALL(cudaEventRecord(end, args->stream));
+  CUDA_CALL(cudaEventSynchronize(end));
+  CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
+
+  const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
+
+  double per_thread_bandwidth = GMEM_LOAD_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
+  double bandwidth = per_thread_bandwidth * total_threads;
+  spdlog::info("{}(id: {}) {:.2f} GB/s", FUNC_NAME(gmem_load_kernel), args->id, bandwidth);
+
+  // cleanup
+  CUDA_CALL(cudaFree(d_in));
+  CUDA_CALL(cudaEventDestroy(start));
+  CUDA_CALL(cudaEventDestroy(end));
 }
 
-// TODO: Refactor
 void Driver::gmemStoreRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  cudaStream_t stream = args->stream;
+  const int l2CacheSize = device_properties_.l2CacheSize;
+  const int stride = l2CacheSize / sizeof(float);
+  const int intra_step_access_per_thread = 1024;
+  const int out_size = stride * intra_step_access_per_thread;
 
-  // const int maxThreadsPerBlock = device_properties_.maxThreadsPerBlock;
-  // const int maxThreadsPerMultiProcessor = device_properties_.maxThreadsPerMultiProcessor;
-  // const int multiProcessorCount = device_properties_.multiProcessorCount;
-  // const int l2CacheSize = device_properties_.l2CacheSize;
+  float *d_out;
+  CUDA_CALL(cudaMallocAsync(&d_out, out_size * sizeof(float), args->stream));
 
-  // const int stride = l2CacheSize / sizeof(float);
-  // const int out_size = stride * 1024;
-  // const int steps = 303; // Hyperparameter to set execution time 300ms
+  cudaEvent_t start, end;
+  start = std::get<1>(args->events[0]);
+  end = std::get<1>(args->events[1]);
+  
+  float elapsed_ms;
+  CUDA_CALL(cudaEventRecord(start, args->stream));
+  gmem_store_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_out, out_size, stride);
+  CUDA_CALL(cudaEventRecord(end, args->stream));
+  CUDA_CALL(cudaEventSynchronize(end));
+  CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
-  // float *out = (float *)Driver::mallocDBuf(out_size * sizeof(float), stream);
+  const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
 
-  // // Fully occupy half of total SMs
-  // dim3 gridDim((maxThreadsPerMultiProcessor / maxThreadsPerBlock) * (multiProcessorCount / 2), 1, 1);
-  // dim3 blockDim(maxThreadsPerBlock, 1, 1);
-  // gmem_store_kernel << <gridDim, blockDim, 0, stream >> > (out, out_size, stride, steps);
+  double per_thread_bandwidth = GMEM_STORE_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
+  double bandwidth = per_thread_bandwidth * total_threads;
+  spdlog::info("{}(id: {}) {:.2f} GB/s", FUNC_NAME(gmem_store_kernel), args->id, bandwidth);
+
+  // cleanup
+  CUDA_CALL(cudaFree(d_out));
+  CUDA_CALL(cudaEventDestroy(start));
+  CUDA_CALL(cudaEventDestroy(end));
 }
