@@ -4,7 +4,6 @@
 
 #include "driver.hpp"
 #include "kernels.hpp"
-#include "utils.hpp"
 
 using SYSTEMX::core::Driver;
 
@@ -45,7 +44,7 @@ void Driver::cublasGemmRun(kernel_run_args *args) {
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
-  uint64_t gflops = M * K * N / elapsed_ms * 1000 / 1000000000;
+  uint64_t gflops = 2.0 * M * K * N / elapsed_ms * 1e3 / 1e9;
   spdlog::info("{}(id: {}) {:d} Gflops", "cublasGemm", args->id, gflops);
   
   // cleanup

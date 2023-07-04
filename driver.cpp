@@ -15,7 +15,7 @@ namespace SYSTEMX {
 namespace core {
 
 Driver::Driver(uint gpu_index) {
-  spdlog::debug("Creating driver for GPU {0}", gpu_index);
+  spdlog::debug("Creating driver {}", gpu_index);
   gpu_index_ = gpu_index;
   CUDA_CALL(cudaSetDevice(gpu_index_));
   CUDA_CALL(cudaGetDeviceProperties(&device_properties_, gpu_index_));
@@ -26,20 +26,16 @@ Driver::Driver(uint gpu_index) {
 }
 
 Driver::~Driver() {
-  spdlog::debug("Destroying driver");
+  spdlog::debug("Destroying driver {}", gpu_index_);
+  CUDA_CALL(cudaSetDevice(gpu_index_));
 
   for (std::thread &t : threads_) {
     t.join();
   }
   
-  spdlog::debug("Destroying streams");
   for (const auto &[id, stream] : stream_map_) {
     CUDA_CALL(cudaStreamSynchronize(stream));
     CUDA_CALL(cudaStreamDestroy(stream));
-  }
-  spdlog::debug("Destroying device buffers");
-  for (void *ptr : dbufs_) {
-    CUDA_CALL(cudaFree(ptr));
   }
 }
 
@@ -52,21 +48,20 @@ cudaStream_t Driver::getStream(uint stream_id) {
   return stream_map_[stream_id];
 }
 
-void *Driver::mallocDBuf(size_t size, cudaStream_t stream) {
-  void *ptr;
-  CUDA_CALL(cudaMallocAsync(&ptr, size, stream));
-  dbufs_.push_back(ptr);
-  return ptr;
-}
+// void *Driver::mallocDBuf(size_t size, cudaStream_t stream) {
+//   void *ptr;
+//   CUDA_CALL(cudaMallocAsync(&ptr, size, stream));
+//   return ptr;
+// }
 
-// Explicitly called at destructor to free all device buffers
-void Driver::freeDBuf(void *ptr) {
-  CUDA_CALL(cudaFree(ptr));
-}
+// // Explicitly called at destructor to free all device buffers
+// void Driver::freeDBuf(void *ptr) {
+//   CUDA_CALL(cudaFree(ptr));
+// }
 
-void Driver::setDBuf(void *ptr, int value, size_t count, cudaStream_t stream) {
-  CUDA_CALL(cudaMemsetAsync(ptr, value, count, stream));
-}
+// void Driver::setDBuf(void *ptr, int value, size_t count, cudaStream_t stream) {
+//   CUDA_CALL(cudaMemsetAsync(ptr, value, count, stream));
+// }
 
 void Driver::assertDeviceCorrect() {
   int device;
