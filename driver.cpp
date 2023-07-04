@@ -39,11 +39,23 @@ Driver::~Driver() {
   }
 }
 
-cudaStream_t Driver::getStream(uint stream_id) {
+cudaStream_t Driver::getStream(uint stream_id, int stream_priority = 0) {
   if (stream_map_.find(stream_id) == stream_map_.end()) {
+    int greatest, least; // range of meaningful priorities: [*greatest, *least]
+                        // smaller number represents higher priority
+    CUDA_CALL(cudaDeviceGetStreamPriorityRange(&least, &greatest));
+    if (stream_priority < greatest || stream_priority > least) {
+      throw runtime_error("Stream priority out of range");
+    }
     cudaStream_t stream;
-    CUDA_CALL(cudaStreamCreate(&stream));
+    CUDA_CALL(cudaStreamCreateWithPriority(&stream, cudaStreamDefault, stream_priority));
     stream_map_[stream_id] = stream;
+  } else {
+    int fixed_priority;
+    CUDA_CALL(cudaStreamGetPriority(stream_map_[stream_id], &fixed_priority));
+    if (fixed_priority != stream_priority) {
+      throw runtime_error("Attempt to modify existing stream's priority");
+    }
   }
   return stream_map_[stream_id];
 }

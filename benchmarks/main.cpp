@@ -23,6 +23,7 @@ int main(int argc, char *argv[]) {
   kernel_1_gpus.append(0);
   kernel_1["gpus"] = kernel_1_gpus;
   kernel_1["stream"] = 0;
+  kernel_1["streamPriority"] = 0;
   Json::Value kernel_1_dimGrid;
   kernel_1_dimGrid.append(79);
   kernel_1_dimGrid.append(1);
@@ -45,6 +46,7 @@ int main(int argc, char *argv[]) {
   kernel_2_gpus.append(0);
   kernel_2["gpus"] = kernel_2_gpus;
   kernel_2["stream"] = 1;
+  kernel_2["streamPriority"] = 0;
   Json::Value kernel_2_dimGrid;
   kernel_2_dimGrid.append(16);
   kernel_2_dimGrid.append(1);

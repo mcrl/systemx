@@ -18,7 +18,7 @@ class Driver {
 public:
   Driver(uint gpu_index);
   ~Driver();
-  cudaStream_t getStream(uint stream_id);
+  cudaStream_t getStream(uint stream_id, int stream_priority);
   void launchKernel(std::string kernel, kernel_run_args *kargs);
   void assertDeviceCorrect();
   cudaDeviceProp device_properties_;
@@ -28,9 +28,12 @@ public:
 
 private:
   uint gpu_index_;
-  std::map<std::string, std::function<void (kernel_run_args *)>> kernel_map_;
-  std::map<uint, cudaStream_t> stream_map_;
+  std::map<std::string, std::function<void(kernel_run_args *)>> kernel_map_;
   std::vector<std::thread> threads_;
+  std::map<uint, cudaStream_t> stream_map_; // key is set to the "logical" stream id 
+                                            // given from benchmark json, not the
+                                            // "physical" cuda stream id which can be
+                                            // queried with `cudaStreamGetId`
 };
 }
 }
