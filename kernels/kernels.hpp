@@ -19,6 +19,7 @@
 typedef std::tuple<std::string, cudaEvent_t> event_tuple_t;
 
 struct kernel_run_args {
+  uint id;
   cudaStream_t stream;
   dim3 dimGrid;
   dim3 dimBlock;

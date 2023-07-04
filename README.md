@@ -6,7 +6,7 @@ Please refer to [instructions](SYSTEMX_INSTALL.md) to install SystemX from sourc
 ## Example command
 ``` bash
 cd build
-./systemx --gpu=<GPU_INDEX> --kernels=<KERNEL1,KERNEL2,...>
+./systemx --benchmark_file=<BENCHMARK>
 ```
 
 ## Generating benchmarks

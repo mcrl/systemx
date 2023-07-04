@@ -8,7 +8,8 @@
 
 using SYSTEMX::core::Driver;
 
-// TODO: Refactor
+// TODO: 
+//  - Set appropriate dimension sizes and SM count according to args->dimGrid/dimBlock
 void Driver::cublasGemmRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
@@ -18,9 +19,7 @@ void Driver::cublasGemmRun(kernel_run_args *args) {
   CUBLAS_CALL(cublasSetStream(handle, stream));
 
   float *d_A, *d_B, *d_C;
-  int M = args->dimGrid.x * args->dimGrid.y * args->dimGrid.z * args->dimBlock.x * args->dimBlock.y * args->dimBlock.z,
-    K = args->dimGrid.x * args->dimGrid.y * args->dimGrid.z * args->dimBlock.x * args->dimBlock.y * args->dimBlock.z,
-    N = args->dimGrid.x * args->dimGrid.y * args->dimGrid.z * args->dimBlock.x * args->dimBlock.y * args->dimBlock.z;
+  uint64_t M = 8192, K = 8192, N = 8192;
 
   CUDA_CALL(cudaMallocAsync(&d_A, M * K * sizeof(float), stream));
   CUDA_CALL(cudaMallocAsync(&d_B, K * N * sizeof(float), stream));
@@ -39,14 +38,15 @@ void Driver::cublasGemmRun(kernel_run_args *args) {
   start = std::get<1>(args->events[0]);
   end = std::get<1>(args->events[1]);
 
+  float elapsed_ms;
   CUDA_CALL(cudaEventRecord(start, args->stream));
   CUBLAS_CALL(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, d_B, N, d_A, K, &beta, d_C, N));
   CUDA_CALL(cudaEventRecord(end, args->stream));
-
-  float elapsed_time = 0;
   CUDA_CALL(cudaEventSynchronize(end));
-  CUDA_CALL(cudaEventElapsedTime(&elapsed_time, start, end));
-  spdlog::info("Kernel {} took {} ms", FUNC_NAME(idle_kernel), elapsed_time);
+  CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
+
+  uint64_t gflops = M * K * N / elapsed_ms * 1000 / 1000000000;
+  spdlog::info("{}(id: {}) {:d} Gflops", "cublasGemm", args->id, gflops);
   
   // cleanup
   CUBLAS_CALL(cublasDestroy(handle));

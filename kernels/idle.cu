@@ -30,8 +30,8 @@ void Driver::idleRun(kernel_run_args *args) {
   idle_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (milliseconds);
   CUDA_CALL(cudaEventRecord(end, args->stream));
 
-  float elapsed_time = 0;
+  float elapsed_time;
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_time, start, end));
-  spdlog::info("Kernel {} took {} ms", FUNC_NAME(idle_kernel), elapsed_time);
+  spdlog::info("{}(id:{:d}) took {}ms", FUNC_NAME(idle_kernel), args->id, elapsed_time);
 }

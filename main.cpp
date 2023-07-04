@@ -87,7 +87,8 @@ int main(int argc, char *argv[])
   }
 
   Json::Value kernels = root["kernels"];
-  for (Json::ValueIterator iter = kernels.begin(); iter != kernels.end(); iter++) {
+  uint id = 0;
+  for (Json::ValueIterator iter = kernels.begin(); iter != kernels.end(); iter++, id++) {
     auto _op = (*iter)["op"].asString();
     auto _gpus = asVector<uint>((*iter)["gpus"]);
     auto _stream = (*iter)["stream"].asUInt();
@@ -105,6 +106,7 @@ int main(int argc, char *argv[])
       
       // init kernel_run_args
       kernel_run_args *kargs = new kernel_run_args;
+      kargs->id = id;
       kargs->stream = driver_map[gpu]->getStream(_stream);
       kargs->dimGrid = dim3(_dimGrid[0], _dimGrid[1], _dimGrid[2]);
       kargs->dimBlock = dim3(_dimBlock[0], _dimBlock[1], _dimBlock[2]);
