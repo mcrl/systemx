@@ -9,7 +9,7 @@
 
 #define KERNELS() \
   T(idle) \
-  T(registerCompute) \
+  T(aluCompute) \
   T(gmemLoad) \
   T(gmemStore) \
   T(l2Load) \

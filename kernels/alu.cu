@@ -13,7 +13,7 @@
 
 using SYSTEMX::core::Driver;
 
-__global__ void register_compute_kernel(float *d, const float seed) {  
+__global__ void alu_compute_kernel(float *d, const float seed) {  
   float tmps[WPT];
   int id = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -39,7 +39,7 @@ __global__ void register_compute_kernel(float *d, const float seed) {
   }
 }
 
-void Driver::registerComputeRun(kernel_run_args *args) {
+void Driver::aluComputeRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
   srand((unsigned int)time(NULL));
@@ -54,14 +54,14 @@ void Driver::registerComputeRun(kernel_run_args *args) {
 
   float elapsed_ms;
   CUDA_CALL(cudaEventRecord(start, args->stream));
-  register_compute_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, seed);
+  alu_compute_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, seed);
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
   double gflops = 2.0 * (STEPS * WPT + WPT) * total_threads / elapsed_ms * 1e3 / 1e9;
-  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", FUNC_NAME(register_compute_kernel), args->id, gflops, elapsed_ms);
+  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", FUNC_NAME(alu_compute_kernel), args->id, gflops, elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaFree(d_in));
