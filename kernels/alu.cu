@@ -9,7 +9,7 @@
 #include "utils.hpp"
 
 #define WPT 8 // Hyperparameter to maximize register spilling of local memory
-#define STEPS 12000000
+#define STEPS 3000000
 
 using SYSTEMX::core::Driver;
 

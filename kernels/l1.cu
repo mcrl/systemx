@@ -4,8 +4,8 @@
 #include "driver.hpp"
 #include "kernels.hpp"
 
-#define L1_LOAD_STEPS 14000
-#define L1_STORE_STEPS 20000
+#define L1_LOAD_STEPS 8000
+#define L1_STORE_STEPS 8000
 
 using SYSTEMX::core::Driver;
 
@@ -13,6 +13,7 @@ using SYSTEMX::core::Driver;
 // For example, if shared memory is configured to 64 KB, texture and load/store operations can use 
 // the remaining 64 KB of L1. The shared memory is configurable up to 96 KB.
 
+// TODO: This kernel is not complete yet. Use texture memory for L1 benchmarking.
 __global__ void l1_load_kernel(float *in, const int in_size, const int stride) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
   int nblocks = gridDim.x;
@@ -20,11 +21,11 @@ __global__ void l1_load_kernel(float *in, const int in_size, const int stride) {
   
   // To avoid kernel optimization
   register float sum = int2floatCast(0);
+  int sector_start = blockIdx.x * sector_size;
+
+  // Each block accesses to only its corresponding sector of out
+  int offset = threadIdx.x % sector_size;
   for (int i = 0; i < L1_LOAD_STEPS; i++) {
-    // Each block accesses to only its corresponding sector of out
-    int sector_start = blockIdx.x * sector_size;
-    int offset = threadIdx.x % sector_size;
-    
     for (int j = 0; j < sector_size / stride; j++) {
       float *in_ptr = &in[sector_start + offset];
       sum += *in_ptr;
@@ -38,7 +39,8 @@ __global__ void l1_load_kernel(float *in, const int in_size, const int stride) {
   }
 }
 
-// TODO: This kernel is not complete yet.
+// TODO: This kernel is not complete yet. Use texture memory for L1 benchmarking.
+// Also, L1 cache is write-through, whereas L2 cache is write-back.
 __global__ void l1_store_kernel(float *out, const int out_size, const int stride) {
   int nblocks = gridDim.x;
   int sector_size = out_size / nblocks;

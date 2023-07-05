@@ -6,8 +6,8 @@
 
 using SYSTEMX::core::Driver;
 
-#define GMEM_STORE_STEPS 4500
-#define GMEM_LOAD_STEPS 1750
+#define GMEM_STORE_STEPS 800
+#define GMEM_LOAD_STEPS 800
 
 __global__ void gmem_load_kernel(float *in, const int in_size, const int stride) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;

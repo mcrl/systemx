@@ -4,8 +4,8 @@
 #include "driver.hpp"
 #include "kernels.hpp"
 
-#define L2_LOAD_STEPS 60
-#define L2_STORE_STEPS 100
+#define L2_LOAD_STEPS 40
+#define L2_STORE_STEPS 40
 
 using SYSTEMX::core::Driver;
 
