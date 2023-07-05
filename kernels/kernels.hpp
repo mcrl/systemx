@@ -13,6 +13,7 @@
   T(gmemLoad) \
   T(gmemStore) \
   T(l2Load) \
+  T(l2Store) \
   T(cublasGemm) \
 
 #define FUNC_NAME(f) #f

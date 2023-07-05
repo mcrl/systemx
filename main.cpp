@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
         kargs->events.push_back(event);
       }
       
-      spdlog::info("Launch Kernel {0} on GPU {1}", _op, gpu);
+      spdlog::info("Launch {0} with driver", _op, gpu);
       driver_map[gpu]->launchKernel(_op, kargs);
     }
   }
