@@ -8,13 +8,15 @@
 #include "cublas_v2.h"
 
 #define KERNELS() \
-  T(idle) \
-  T(aluCompute) \
-  T(gmemLoad) \
-  T(gmemStore) \
-  T(l2Load) \
-  T(l2Store) \
-  T(cublasGemm) \
+  T(idle)         \
+  T(aluCompute)   \
+  T(gmemLoad)     \
+  T(gmemStore)    \
+  T(l2Load)       \
+  T(l2Store)      \
+  T(l1Load)       \
+  T(l1Store)      \
+  T(cublasGemm)   \
 
 #define FUNC_NAME(f) #f
 
@@ -43,6 +45,10 @@ inline __device__ void sm_id(uint32_t *smid) {
 
 inline uint get_nthreads(dim3 dimGrid, dim3 dimBlock) {
   return dimGrid.x * dimGrid.y * dimGrid.z * dimBlock.x * dimBlock.y * dimBlock.z;
+}
+
+inline uint get_nblocks(dim3 dimGrid) {
+  return dimGrid.x * dimGrid.y * dimGrid.z;
 }
 
 #ifndef CUDA_CALL

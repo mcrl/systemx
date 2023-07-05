@@ -64,9 +64,9 @@ __global__ void l2_store_kernel(float *out, const int out_size, const int stride
 void Driver::l2LoadRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  const int l2CacheSize = device_properties_.l2CacheSize;
+  const int l2CacheSizeBytes = device_properties_.l2CacheSize;
   const int stride = device_properties_.warpSize; 
-  const int in_size = l2CacheSize / sizeof(float); // in_size is set to L2 cache size, which will make
+  const int in_size = l2CacheSizeBytes / sizeof(float); // in_size is set to L2 cache size, which will make
                                                   // L2 hit rate ~100%
   const int intra_step_access_per_thread = in_size / stride;
   
@@ -100,9 +100,9 @@ void Driver::l2LoadRun(kernel_run_args *args) {
 void Driver::l2StoreRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
-  const int l2CacheSize = device_properties_.l2CacheSize;
+  const int l2CacheSizeBytes = device_properties_.l2CacheSize;
   const int stride = device_properties_.warpSize; 
-  const int out_size = l2CacheSize / sizeof(float); // out_size is set to L2 cache size, which will make
+  const int out_size = l2CacheSizeBytes / sizeof(float); // out_size is set to L2 cache size, which will make
                                                   // L2 hit rate ~100%
   const int intra_step_access_per_thread = out_size / stride;
   
