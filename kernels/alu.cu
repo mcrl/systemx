@@ -42,6 +42,8 @@ __global__ void alu_compute_kernel(float *d, const float seed) {
 void Driver::aluComputeRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
+  assertDeviceCorrect();
+
   srand((unsigned int)time(NULL));
   const int seed = rand();
 

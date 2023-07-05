@@ -63,6 +63,8 @@ __global__ void l1_store_kernel(float *out, const int out_size, const int stride
 void Driver::l1LoadRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
+  assertDeviceCorrect();
+
   // TODO: Remove hard-coded L1 cache + shared memory size in bytes
   // 128 KB for Volta, 192 KB for Ampere
   const int l1CacheSizeBytes = 128 * 1024 - device_properties_.sharedMemPerMultiprocessor;
@@ -101,6 +103,8 @@ void Driver::l1LoadRun(kernel_run_args *args) {
 
 void Driver::l1StoreRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
+
+  assertDeviceCorrect();
 
   // TODO: Remove hard-coded L1 cache + shared memory size in bytes
   // 128 KB for Volta, 192 KB for Ampere

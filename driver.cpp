@@ -72,9 +72,9 @@ void Driver::launchKernel(std::string kernel, kernel_run_args *kargs) {
   if (kernel_map_.find(kernel) == kernel_map_.end()) {
     throw runtime_error("Kernel not found");
   }
-
+  spdlog::debug("Launching kernel {} on driver {}", kernel, gpu_index_);
   // bind Driver::gpu_index_ to thread & launch thread kernel 
-  std::thread t([&](kernel_run_args *args) {
+  std::thread t([&,kernel](kernel_run_args *args) {
     CUDA_CALL(cudaSetDevice(this->gpu_index_));
     this->kernel_map_[kernel](args);
   }, kargs);

@@ -12,6 +12,8 @@ using SYSTEMX::core::Driver;
 void Driver::cublasGemmRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
+  assertDeviceCorrect();
+
   cudaStream_t stream = args->stream;
   cublasHandle_t handle;
   CUBLAS_CALL(cublasCreate(&handle));

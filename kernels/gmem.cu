@@ -64,6 +64,8 @@ __global__ void gmem_store_kernel(float *out, const int out_size, const int stri
 void Driver::gmemLoadRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
 
+  assertDeviceCorrect();
+
   const int l2CacheSize = device_properties_.l2CacheSize;
   const int stride = l2CacheSize / sizeof(float);
   const int intra_step_access_per_thread = 1024;
@@ -97,6 +99,8 @@ void Driver::gmemLoadRun(kernel_run_args *args) {
 
 void Driver::gmemStoreRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
+
+  assertDeviceCorrect();
 
   const int l2CacheSize = device_properties_.l2CacheSize;
   const int stride = l2CacheSize / sizeof(float);
