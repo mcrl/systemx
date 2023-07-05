@@ -87,7 +87,7 @@ void Driver::gmemLoadRun(kernel_run_args *args) {
 
   double per_thread_bandwidth = GMEM_LOAD_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
   double bandwidth = per_thread_bandwidth * total_threads;
-  spdlog::info("{}(id: {}) {:.2f} GB/s", FUNC_NAME(gmem_load_kernel), args->id, bandwidth);
+  spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(gmem_load_kernel), args->id, bandwidth, elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaFree(d_in));
@@ -121,7 +121,7 @@ void Driver::gmemStoreRun(kernel_run_args *args) {
 
   double per_thread_bandwidth = GMEM_STORE_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
   double bandwidth = per_thread_bandwidth * total_threads;
-  spdlog::info("{}(id: {}) {:.2f} GB/s", FUNC_NAME(gmem_store_kernel), args->id, bandwidth);
+  spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(gmem_store_kernel), args->id, bandwidth, elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaFree(d_out));
