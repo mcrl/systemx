@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     auto _stream = (*iter)["stream"].asUInt();
     auto _streamPriority = (*iter)["streamPriority"].asInt();
     auto _dimGrid = asVector<uint>((*iter)["dimGrid"]);
-    auto _dimBlock = asVector<uint>((*iter)["dimGrid"]);
+    auto _dimBlock = asVector<uint>((*iter)["dimBlock"]);
     auto _events = asVector<string>((*iter)["events"]);
 
     for (uint gpu : _gpus) {
