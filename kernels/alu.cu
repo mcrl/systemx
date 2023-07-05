@@ -61,7 +61,7 @@ void Driver::aluComputeRun(kernel_run_args *args) {
 
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
   double gflops = 2.0 * (STEPS * WPT + WPT) * total_threads / elapsed_ms * 1e3 / 1e9;
-  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", FUNC_NAME(alu_compute_kernel), args->id, gflops, elapsed_ms);
+  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", FUNC_NAME(alu_compute_kernel), args->id, gflops, (int)elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaFree(d_in));

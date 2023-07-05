@@ -33,7 +33,7 @@ void Driver::idleRun(kernel_run_args *args) {
   float elapsed_ms;
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
-  spdlog::info("{}(id:{:d}) {:d} ms", FUNC_NAME(idle_kernel), args->id, elapsed_ms);
+  spdlog::info("{}(id:{:d}) {:d} ms", FUNC_NAME(idle_kernel), args->id, (int)elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaEventDestroy(start));

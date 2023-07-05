@@ -45,7 +45,7 @@ void Driver::cublasGemmRun(kernel_run_args *args) {
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   double gflops = 2.0 * M * K * N / elapsed_ms * 1e3 / 1e9;
-  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", "cublasGemm", args->id, gflops, elapsed_ms);
+  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", "cublasGemm", args->id, gflops, (int)elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaFree(d_A));
