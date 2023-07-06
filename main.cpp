@@ -4,6 +4,8 @@
 #include <string>
 #include <fstream>
 #include <type_traits>
+#include <condition_variable>
+#include <mutex>
 
 #include "spdlog/spdlog.h"
 #include "json/json.h"
@@ -97,6 +99,16 @@ int main(int argc, char *argv[])
     auto _dimBlock = asVector<uint>((*iter)["dimBlock"]);
     auto _steps = (*iter)["steps"].asUInt();
     auto _events = asVector<string>((*iter)["events"]);
+    auto _require_sync = (*iter)["require_sync"].asBool();
+
+    /* optional arguments */
+
+    // shared arguments 
+    float **_buffers = new float *[_gpus.size()]; // heap variable
+  
+    mutex _mutex;
+    condition_variable _cv;
+    uint _ready_cnt = 0;
 
     for (uint gpu : _gpus) {
       CUDA_CALL(cudaSetDevice(gpu));
@@ -110,6 +122,7 @@ int main(int argc, char *argv[])
       kernel_run_args *kargs = new kernel_run_args;
       kargs->id = id;
       kargs->stream = driver_map[gpu]->getStream(_stream, _streamPriority);
+      kargs->gpus = _gpus;
       kargs->dimGrid = dim3(_dimGrid[0], _dimGrid[1], _dimGrid[2]);
       kargs->dimBlock = dim3(_dimBlock[0], _dimBlock[1], _dimBlock[2]);
       kargs->steps = _steps;
@@ -123,10 +136,22 @@ int main(int argc, char *argv[])
         _event_map[_event] = event;
         kargs->events.push_back(event);
       }
-      
+
+      // add optional arguments
+      if (_require_sync) {
+        kargs->mutex = &_mutex;
+        kargs->cv = &_cv;
+        kargs->ready_cnt = &_ready_cnt;
+      }
+      if (_op == "pcieRead" || _op == "pcieWrite") {
+        kargs->buffers = _buffers;
+      }
+
       driver_map[gpu]->launchKernel(_op, kargs);
     }
   }
+
+  // TODO: cleanup kargs
 
   // cleanup driver
   for (const auto &[id, driver] : driver_map) {

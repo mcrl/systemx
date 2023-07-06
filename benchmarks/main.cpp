@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
   kernel_1_events.append("start");
   kernel_1_events.append("end");
   kernel_1["events"] = kernel_1_events;
+  kernel_1["require_sync"] = false;
   kernels.append(kernel_1);
 
 	Json::Value kernel_2;
@@ -63,6 +64,7 @@ int main(int argc, char *argv[]) {
   kernel_2_events.append("start");
   kernel_2_events.append("end");
   kernel_2["events"] = kernel_2_events;
+  kernel_2["require_sync"] = false;
   kernels.append(kernel_2);
   
   root["kernels"] = kernels;
