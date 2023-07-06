@@ -16,6 +16,8 @@
   T(l2Store)      \
   T(l1Load)       \
   T(l1Store)      \
+  T(pcieRead)     \
+  T(pcieWrite)    \
   T(cublasGemm)   \
 
 #define FUNC_NAME(f) #f
