@@ -27,6 +27,7 @@ struct kernel_run_args {
   cudaStream_t stream;
   dim3 dimGrid;
   dim3 dimBlock;
+  uint steps;
   std::vector<event_tuple_t> events;
 };
 

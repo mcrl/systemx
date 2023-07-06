@@ -4,20 +4,18 @@
 #include "driver.hpp"
 #include "kernels.hpp"
 
-#define L2_LOAD_STEPS 40
-#define L2_STORE_STEPS 40
-
 using SYSTEMX::core::Driver;
 
-__global__ void l2_load_kernel(float *in, const int in_size, const int stride) {
+__global__ void l2_load_kernel(float *in, const int in_size,
+                               const int stride, const uint steps) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
   
   // To avoid kernel optimization
   float sum = int2floatCast(0);
-  for (int i = 0; i < L2_LOAD_STEPS; i++) {
+  for (uint i = 0; i < steps; i++) {
     int idx = id;
     
-    for (int j = 0; j < in_size / stride; j++) {
+    for (uint j = 0; j < in_size / stride; j++) {
       register float tmp;
       // load from gmem bypassing l1 cache
       asm volatile(
@@ -38,15 +36,16 @@ __global__ void l2_load_kernel(float *in, const int in_size, const int stride) {
   }
 }
 
-__global__ void l2_store_kernel(float *out, const int out_size, const int stride) {
+__global__ void l2_store_kernel(float *out, const int out_size,
+                                const int stride, const uint steps) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
 
   // To avoid kernel optimization
   register float src = int2floatCast(0);
-  for (int i = 0; i < L2_STORE_STEPS; i++) {
+  for (uint i = 0; i < steps; i++) {
     int idx = id;
     
-    for (int j = 0; j < out_size / stride; j++) {
+    for (uint j = 0; j < out_size / stride; j++) {
       register float *out_ptr = &out[idx];
       // store to gmem bypassing l1 cache
       asm volatile(
@@ -82,14 +81,14 @@ void Driver::l2LoadRun(kernel_run_args *args) {
 
   float elapsed_ms;
   CUDA_CALL(cudaEventRecord(start, args->stream));
-  l2_load_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, in_size, stride);
+  l2_load_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, in_size, stride, args->steps);
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
 
-  double per_thread_bandwidth = L2_LOAD_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
+  double per_thread_bandwidth = args->steps * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
   double bandwidth = per_thread_bandwidth * total_threads;
   spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(l2_load_kernel), args->id, bandwidth, (int)elapsed_ms);
   
@@ -119,14 +118,14 @@ void Driver::l2StoreRun(kernel_run_args *args) {
 
   float elapsed_ms;
   CUDA_CALL(cudaEventRecord(start, args->stream));
-  l2_store_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_out, out_size, stride);
+  l2_store_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_out, out_size, stride, args->steps);
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
 
-  double per_thread_bandwidth = L2_STORE_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
+  double per_thread_bandwidth = args->steps * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
   double bandwidth = per_thread_bandwidth * total_threads;
   spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(l2_store_kernel), args->id, bandwidth, (int)elapsed_ms);
   

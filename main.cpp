@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
     auto _streamPriority = (*iter)["streamPriority"].asInt();
     auto _dimGrid = asVector<uint>((*iter)["dimGrid"]);
     auto _dimBlock = asVector<uint>((*iter)["dimBlock"]);
+    auto _steps = (*iter)["steps"].asUInt();
     auto _events = asVector<string>((*iter)["events"]);
 
     for (uint gpu : _gpus) {
@@ -111,7 +112,8 @@ int main(int argc, char *argv[])
       kargs->stream = driver_map[gpu]->getStream(_stream, _streamPriority);
       kargs->dimGrid = dim3(_dimGrid[0], _dimGrid[1], _dimGrid[2]);
       kargs->dimBlock = dim3(_dimBlock[0], _dimBlock[1], _dimBlock[2]);
-
+      kargs->steps = _steps;
+      
       // init events
       map<string, event_tuple_t> _event_map; // temporary data structure
       for (string _event : _events) {

@@ -4,9 +4,6 @@
 #include "driver.hpp"
 #include "kernels.hpp"
 
-#define L1_LOAD_STEPS 8000
-#define L1_STORE_STEPS 8000
-
 using SYSTEMX::core::Driver;
 
 // For Volta architecture, L1 cache and shared memory are combined with merged capacity of 128 KB.
@@ -14,7 +11,8 @@ using SYSTEMX::core::Driver;
 // the remaining 64 KB of L1. The shared memory is configurable up to 96 KB.
 
 // TODO: This kernel is not complete yet. Use texture memory for L1 benchmarking.
-__global__ void l1_load_kernel(float *in, const int in_size, const int stride) {
+__global__ void l1_load_kernel(float *in, const int in_size,
+                               const int stride, const uint steps) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
   int nblocks = gridDim.x;
   int sector_size = in_size / nblocks;
@@ -25,8 +23,8 @@ __global__ void l1_load_kernel(float *in, const int in_size, const int stride) {
 
   // Each block accesses to only its corresponding sector of out
   int offset = threadIdx.x % sector_size;
-  for (int i = 0; i < L1_LOAD_STEPS; i++) {
-    for (int j = 0; j < sector_size / stride; j++) {
+  for (uint i = 0; i < steps; i++) {
+    for (uint j = 0; j < sector_size / stride; j++) {
       float *in_ptr = &in[sector_start + offset];
       sum += *in_ptr;
       offset = (offset + stride) % sector_size;
@@ -41,18 +39,19 @@ __global__ void l1_load_kernel(float *in, const int in_size, const int stride) {
 
 // TODO: This kernel is not complete yet. Use texture memory for L1 benchmarking.
 // Also, L1 cache is write-through, whereas L2 cache is write-back.
-__global__ void l1_store_kernel(float *out, const int out_size, const int stride) {
+__global__ void l1_store_kernel(float *out, const int out_size,
+                                const int stride, const uint steps) {
   int nblocks = gridDim.x;
   int sector_size = out_size / nblocks;
   
   // To avoid kernel optimization
   register float src = int2floatCast(0);
-  for (int i = 0; i < L1_STORE_STEPS; i++) {
+  for (uint i = 0; i < steps; i++) {
     // Each block accesses to only its corresponding sector of out
     int sector_start = blockIdx.x * sector_size;
     int offset = threadIdx.x % sector_size;
     
-    for (int j = 0; j < sector_size / stride; j++) {
+    for (uint j = 0; j < sector_size / stride; j++) {
       float *out_ptr = &out[sector_start + offset];
       *out_ptr = src;
       offset = (offset + stride) % sector_size;
@@ -84,14 +83,14 @@ void Driver::l1LoadRun(kernel_run_args *args) {
 
   float elapsed_ms;
   CUDA_CALL(cudaEventRecord(start, args->stream));
-  l1_load_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, in_size, stride);
+  l1_load_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, in_size, stride, args->steps);
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
 
-  double per_thread_bandwidth = L1_LOAD_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
+  double per_thread_bandwidth = args->steps * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
   double bandwidth = per_thread_bandwidth * total_threads;
   spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(l1_load_kernel), args->id, bandwidth, (int)elapsed_ms);
   
@@ -124,14 +123,14 @@ void Driver::l1StoreRun(kernel_run_args *args) {
 
   float elapsed_ms;
   CUDA_CALL(cudaEventRecord(start, args->stream));
-  l1_store_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_out, out_size, stride);
+  l1_store_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_out, out_size, stride, args->steps);
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
 
-  double per_thread_bandwidth = L1_STORE_STEPS * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
+  double per_thread_bandwidth = args->steps * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
   double bandwidth = per_thread_bandwidth * total_threads;
   spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(l1_store_kernel), args->id, bandwidth, (int)elapsed_ms);
   

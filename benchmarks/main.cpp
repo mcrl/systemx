@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
   kernel_1["stream"] = 0;
   kernel_1["streamPriority"] = 0;
   Json::Value kernel_1_dimGrid;
-  kernel_1_dimGrid.append(79);
+  kernel_1_dimGrid.append(80);
   kernel_1_dimGrid.append(1);
   kernel_1_dimGrid.append(1);
   kernel_1["dimGrid"] = kernel_1_dimGrid;
@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
   kernel_1_dimBlock.append(1);
   kernel_1_dimBlock.append(1);
   kernel_1["dimBlock"] = kernel_1_dimBlock;
+  kernel_1["steps"] = 1;
   Json::Value kernel_1_events;
   kernel_1_events.append("start");
   kernel_1_events.append("end");
@@ -48,15 +49,16 @@ int main(int argc, char *argv[]) {
   kernel_2["stream"] = 1;
   kernel_2["streamPriority"] = 0;
   Json::Value kernel_2_dimGrid;
-  kernel_2_dimGrid.append(16);
+  kernel_2_dimGrid.append(80);
   kernel_2_dimGrid.append(1);
   kernel_2_dimGrid.append(1);
   kernel_2["dimGrid"] = kernel_2_dimGrid;
   Json::Value kernel_2_dimBlock;
-  kernel_2_dimBlock.append(33);
+  kernel_2_dimBlock.append(1024);
   kernel_2_dimBlock.append(1);
   kernel_2_dimBlock.append(1);
   kernel_2["dimBlock"] = kernel_2_dimBlock;
+  kernel_2["steps"] = 1;
   Json::Value kernel_2_events;
   kernel_2_events.append("start");
   kernel_2_events.append("end");
