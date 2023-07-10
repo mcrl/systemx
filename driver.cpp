@@ -48,7 +48,7 @@ cudaStream_t Driver::getStream(uint stream_id, int stream_priority = 0) {
       throw runtime_error("Stream priority out of range");
     }
     cudaStream_t stream;
-    CUDA_CALL(cudaStreamCreateWithPriority(&stream, cudaStreamDefault, stream_priority));
+    CUDA_CALL(cudaStreamCreateWithPriority(&stream, cudaStreamNonBlocking, stream_priority));
     stream_map_[stream_id] = stream;
   } else {
     int fixed_priority;
