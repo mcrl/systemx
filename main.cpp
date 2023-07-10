@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <condition_variable>
 #include <mutex>
+#include <map>
 
 #include "spdlog/spdlog.h"
 #include "json/json.h"
@@ -99,16 +100,17 @@ int main(int argc, char *argv[])
     auto _dimBlock = asVector<uint>((*iter)["dimBlock"]);
     auto _steps = (*iter)["steps"].asUInt();
     auto _events = asVector<string>((*iter)["events"]);
-    auto _require_sync = (*iter)["require_sync"].asBool();
 
-    /* optional arguments */
-
-    // shared arguments 
-    float **_buffers = new float *[_gpus.size()]; // heap variable
-  
-    mutex _mutex;
-    condition_variable _cv;
-    uint _ready_cnt = 0;
+    /* optional shared arguments */
+    // since shared arguments are pointers to heap variables, they **must** be dynamically
+    // allocated and assigned as a member to `kargs`.
+    map<string, SharedCounter*> *_shared_counter_map = new map<string, SharedCounter*>;
+    if ((*iter)["sharedCounters"]) {
+      for (const auto &counter : (*iter)["sharedCounters"]) {
+        cout << counter.asString() << endl;
+        (*_shared_counter_map)[counter.asString()] = new SharedCounter(_gpus.size());
+      }
+    }
 
     for (uint gpu : _gpus) {
       CUDA_CALL(cudaSetDevice(gpu));
@@ -137,16 +139,9 @@ int main(int argc, char *argv[])
         kargs->events.push_back(event);
       }
 
-      // add optional arguments
-      if (_require_sync) {
-        kargs->mutex = &_mutex;
-        kargs->cv = &_cv;
-        kargs->ready_cnt = &_ready_cnt;
-      }
-      if (_op == "pcieRead" || _op == "pcieWrite") {
-        kargs->buffers = _buffers;
-      }
-
+      // add optional shared arguments
+      kargs->shared_counter_map = _shared_counter_map;
+      
       driver_map[gpu]->launchKernel(_op, kargs);
     }
   }

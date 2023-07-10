@@ -5,6 +5,7 @@
 
 #include "driver.hpp"
 #include "kernels.hpp"
+#include "utils.hpp"
 
 #define PCIE_STORE_NUM_ELEMS_PER_STEP 1024 * 1024
 
@@ -70,72 +71,72 @@ void Driver::pcieWriteRun(kernel_run_args *args) {
   cudaEvent_t ready;
   CUDA_CALL(cudaEventCreate(&ready));
 
-  // set appropriate device buffer
-  const int in_size = PCIE_STORE_NUM_ELEMS_PER_STEP;
-  CUDA_CALL(cudaMallocAsync(&(args->buffers[gpu_index_]),
-                            in_size * sizeof(float),
-                            args->stream));
-  CUDA_CALL(cudaMemsetAsync(args->buffers[gpu_index_], 1, in_size * sizeof(float), args->stream));
-  CUDA_CALL(cudaEventRecord(ready, args->stream));
+  // // set appropriate device buffer
+  // const int in_size = PCIE_STORE_NUM_ELEMS_PER_STEP;
+  // CUDA_CALL(cudaMallocAsync(&(args->buffers[gpu_index_]),
+  //                           in_size * sizeof(float),
+  //                           args->stream));
+  // CUDA_CALL(cudaMemsetAsync(args->buffers[gpu_index_], 1, in_size * sizeof(float), args->stream));
+  // CUDA_CALL(cudaEventRecord(ready, args->stream));
 
-  // check p2p access
-  // TODO: For now, we assume that all gpus can either access all others via p2p or not at all
-  bool p2p = true;
-  for (uint peer_gpu : args->gpus) {
-    if (peer_gpu == gpu_index_) continue;
-    int access;
-    CUDA_CALL(cudaDeviceCanAccessPeer(&access, gpu_index_, peer_gpu)); // 1 if gpu_index_ -> peer_gpu is possible
-    if (access) {
-      spdlog::debug("GPU {} can directly access GPU {} via p2p", gpu_index_, peer_gpu);
-      CUDA_CALL(cudaDeviceEnablePeerAccess(peer_gpu, 0));
-    } else {
-      spdlog::warn("GPU {} cannot directly access GPU {} via p2p. Fallback to cudaMemcpyPeerAsync", gpu_index_, peer_gpu);
-      p2p = false;
-    }
-  }
+  // // check p2p access
+  // // TODO: For now, we assume that all gpus can either access all others via p2p or not at all
+  // bool p2p = true;
+  // for (uint peer_gpu : args->gpus) {
+  //   if (peer_gpu == gpu_index_) continue;
+  //   int access;
+  //   CUDA_CALL(cudaDeviceCanAccessPeer(&access, gpu_index_, peer_gpu)); // 1 if gpu_index_ -> peer_gpu is possible
+  //   if (access) {
+  //     spdlog::debug("GPU {} can directly access GPU {} via p2p", gpu_index_, peer_gpu);
+  //     CUDA_CALL(cudaDeviceEnablePeerAccess(peer_gpu, 0));
+  //   } else {
+  //     spdlog::warn("GPU {} cannot directly access GPU {} via p2p. Fallback to cudaMemcpyPeerAsync", gpu_index_, peer_gpu);
+  //     p2p = false;
+  //   }
+  // }
 
-  // check if all buffers are ready
-  CUDA_CALL(cudaEventSynchronize(ready));
+  // // check if all buffers are ready
+  // CUDA_CALL(cudaEventSynchronize(ready));
 
   // check if all gpus are ready
-  std::unique_lock<std::mutex> lk(*args->mutex);
-  *args->ready_cnt += 1;
-  while (*args->ready_cnt < args->gpus.size()) args->cv->wait(lk);
-  args->cv->notify_all();
+  (*(args->shared_counter_map))["deviceBufferReady"]->decrement();
 
-  // start kernel
-  const int intra_step_access_per_thread = 0; // TODO: fill in
+  // // start kernel
+  // const int intra_step_access_per_thread = 0; // TODO: fill in
 
-  cudaEvent_t start, end;
-  start = std::get<1>(args->events[0]);
-  end = std::get<1>(args->events[1]);
+  // cudaEvent_t start, end;
+  // start = std::get<1>(args->events[0]);
+  // end = std::get<1>(args->events[1]);
 
-  float elapsed_ms;
-  CUDA_CALL(cudaEventRecord(start, args->stream));
-  if (p2p && p2p_mechanism == SM) {
-    // TODO: make multiple dests possible
-    copyp2p_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (args->buffers[gpu_index_ == 0 ? 1 : 0],
-                                                                            args->buffers[gpu_index_],
-                                                                            in_size, args->steps);
-  } else {
-    // TODO: implement
-    // e.g.,
-    // cudaMemcpyPeerAsync(dest, destDevice, src, srcDevice,
-    //                       sizeof(int) * num_elems, streamToRun);
-  }
-  CUDA_CALL(cudaEventRecord(end, args->stream));
-  CUDA_CALL(cudaEventSynchronize(end));
-  CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
+  // float elapsed_ms;
+  // CUDA_CALL(cudaEventRecord(start, args->stream));
+  // if (p2p && p2p_mechanism == SM) {
+  //   // TODO: make multiple dests possible
+  //   copyp2p_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (args->buffers[gpu_index_ == 0 ? 1 : 0],
+  //                                                                           args->buffers[gpu_index_],
+  //                                                                           in_size, args->steps);
+  // } else {
+  //   // TODO: implement
+  //   // e.g.,
+  //   // cudaMemcpyPeerAsync(dest, destDevice, src, srcDevice,
+  //   //                       sizeof(int) * num_elems, streamToRun);
+  // }
+  // CUDA_CALL(cudaEventRecord(end, args->stream));
+  // CUDA_CALL(cudaEventSynchronize(end));
+  // CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
-  const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
+  // const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
 
-  double per_thread_bandwidth = args->steps * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
-  double bandwidth = per_thread_bandwidth * total_threads;
-  spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(copyp2p_kernel), args->id, bandwidth, (int)elapsed_ms);
+  // double per_thread_bandwidth = args->steps * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
+  // double bandwidth = per_thread_bandwidth * total_threads;
+  // spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(copyp2p_kernel), args->id, bandwidth, (int)elapsed_ms);
+
+  // check if all gpus are finished
+  (*(args->shared_counter_map))["deviceKernelFinish"]->decrement();
   
   // cleanup
-  CUDA_CALL(cudaFree(args->buffers[gpu_index_]));
-  // TODO: disable access
-  CUDA_CALL(cudaEventDestroy(start));
-  CUDA_CALL(cudaEventDestroy(end));
+  // CUDA_CALL(cudaFree(args->buffers[gpu_index_]));
+  // // TODO: disable access
+  // CUDA_CALL(cudaEventDestroy(start));
+  // CUDA_CALL(cudaEventDestroy(end));
 }

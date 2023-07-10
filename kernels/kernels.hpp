@@ -9,6 +9,8 @@
 #include "cuda_runtime.h"
 #include "cublas_v2.h"
 
+#include "utils.hpp"
+
 #define KERNELS() \
   T(idle)         \
   T(aluCompute)   \
@@ -35,14 +37,8 @@ struct kernel_run_args {
   uint steps;
   std::vector<event_tuple_t> events;
 
-  /* optional arguments */
-
-  // shared arguments
-  //   - shared between multiple drivers
-  //   - pointer to heap variable
-  std::mutex *mutex;
-  std::condition_variable *cv;
-  uint *ready_cnt;
+  /* optional shared arguments */
+  SYSTEMX::utils::shared_counter_map_t *shared_counter_map;
   float **buffers;
 };
 
