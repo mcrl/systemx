@@ -60,7 +60,8 @@ int main(int argc, char *argv[])
   map<int, Driver *> driver_map;
   CUDA_CALL(cudaGetDeviceCount(&ngpus));
   spdlog::info("Found {0} GPUs", ngpus);
-
+  Driver::ngpus_ = ngpus; // set static ngpus_ member to ngpus in the node
+  
   // Parse benchmark file
   Json::Reader reader;
   Json::Value root;

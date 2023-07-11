@@ -42,32 +42,6 @@ struct kernel_run_args {
   SYSTEMX::utils::shared_buffer_map_t *shared_buffer_map;
 };
 
-#ifndef CUDA_CALL
-#define CUDA_CALL(f)                                                           \
-  {                                                                            \
-    cudaError_t err = (f);                                                     \
-    if (err != cudaSuccess) {                                                  \
-      fprintf(stderr, "CUDA error at [%s:%d] %d %s\n",                         \
-               __FILE__, __LINE__,                                             \
-              err, cudaGetErrorString(err));                                   \
-      exit(EXIT_FAILURE);                                                      \
-    }                                                                          \
-  }                                                                            
-#endif
-
-#ifndef CUBLAS_CALL
-#define CUBLAS_CALL(f)                                      \
-  {                                                         \
-    cublasStatus_t err = (f);                               \
-    if (err != CUBLAS_STATUS_SUCCESS) {                     \
-      fprintf(stderr, "cuBLAS error at [%s:%d] %d %s\n",    \
-               __FILE__, __LINE__,                          \
-              err, cublasGetStatusString(err));             \
-      exit(EXIT_FAILURE);                                              \
-    }                                                       \
-  }
-#endif
-
 inline __device__ float mad(const float a, const float b, const float c) {
   return a * b + c;
 }
@@ -87,8 +61,4 @@ inline uint get_nthreads(dim3 dimGrid, dim3 dimBlock) {
 
 inline uint get_nblocks(dim3 dimGrid) {
   return dimGrid.x * dimGrid.y * dimGrid.z;
-}
-
-inline void checkP2Paccess(int *access, uint src, uint dst) {
-  CUDA_CALL(cudaDeviceCanAccessPeer(access, src, dst));
 }

@@ -14,11 +14,17 @@
 namespace SYSTEMX {
 namespace core {
 
+// define static member variables
+uint Driver::ngpus_;
+
 Driver::Driver(uint gpu_index) {
   spdlog::debug("Creating driver {}", gpu_index);
   gpu_index_ = gpu_index;
   CUDA_CALL(cudaSetDevice(gpu_index_));
   CUDA_CALL(cudaGetDeviceProperties(&device_properties_, gpu_index_));
+  for (uint peer = 0; peer < ngpus_; peer++) {
+    SYSTEMX::utils::enable_device_memory_access(gpu_index_, peer);
+  }
 
 #define T(op) kernel_map_[#op] = [&](kernel_run_args *args){return this->op##Run(args);};
   KERNELS()
@@ -36,6 +42,10 @@ Driver::~Driver() {
   for (const auto &[id, stream] : stream_map_) {
     CUDA_CALL(cudaStreamSynchronize(stream));
     CUDA_CALL(cudaStreamDestroy(stream));
+  }
+
+  for (uint peer = 0; peer < ngpus_; peer++) {
+    SYSTEMX::utils::disable_device_memory_access(gpu_index_, peer);
   }
 }
 
