@@ -39,7 +39,7 @@ struct kernel_run_args {
 
   /* optional shared arguments */
   SYSTEMX::utils::shared_counter_map_t *shared_counter_map;
-  float **buffers;
+  SYSTEMX::utils::shared_buffer_map_t *shared_buffer_map;
 };
 
 #ifndef CUDA_CALL

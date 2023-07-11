@@ -30,6 +30,6 @@ private:
 };
 
 typedef std::map<string, SharedCounter*> shared_counter_map_t;
-
+typedef std::map<string, std::vector<float*>*> shared_buffer_map_t;
 }
 }

@@ -104,11 +104,17 @@ int main(int argc, char *argv[])
     /* optional shared arguments */
     // since shared arguments are pointers to heap variables, they **must** be dynamically
     // allocated and assigned as a member to `kargs`.
-    map<string, SharedCounter*> *_shared_counter_map = new map<string, SharedCounter*>;
+    shared_counter_map_t *_shared_counter_map = new shared_counter_map_t;
     if ((*iter)["sharedCounters"]) {
       for (const auto &counter : (*iter)["sharedCounters"]) {
-        cout << counter.asString() << endl;
         (*_shared_counter_map)[counter.asString()] = new SharedCounter(_gpus.size());
+      }
+    }
+
+    shared_buffer_map_t *_shared_buffer_map = new shared_buffer_map_t;
+    if ((*iter)["sharedBuffers"]) {
+      for (const auto &buffer : (*iter)["sharedBuffers"]) {
+        (*_shared_buffer_map)[buffer.asString()] = new vector<float*>(_gpus.size());
       }
     }
 
@@ -141,6 +147,7 @@ int main(int argc, char *argv[])
 
       // add optional shared arguments
       kargs->shared_counter_map = _shared_counter_map;
+      kargs->shared_buffer_map = _shared_buffer_map;
       
       driver_map[gpu]->launchKernel(_op, kargs);
     }
