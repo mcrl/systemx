@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 	Json::Value kernels;
 
 	Json::Value kernel_1;
-  kernel_1["op"] = "idle";
+  kernel_1["op"] = "pcieRead";
   Json::Value kernel_1_gpus;
   kernel_1_gpus.append(0);
   kernel_1["gpus"] = kernel_1_gpus;
@@ -39,6 +39,15 @@ int main(int argc, char *argv[]) {
   kernel_1_events.append("start");
   kernel_1_events.append("end");
   kernel_1["events"] = kernel_1_events;
+  // optional shared args
+  Json::Value kernel_1_shared_counters;
+  kernel_1_shared_counters.append("deviceBufferReady");
+  kernel_1_shared_counters.append("deviceKernelFinish");
+  kernel_1["sharedCounters"] = kernel_1_shared_counters;
+  Json::Value kernel_1_shared_buffers;
+  kernel_1_shared_buffers.append("d_in");
+  kernel_1["sharedBuffers"] = kernel_1_shared_buffers;
+  //
   kernels.append(kernel_1);
 
 	Json::Value kernel_2;
@@ -63,6 +72,15 @@ int main(int argc, char *argv[]) {
   kernel_2_events.append("start");
   kernel_2_events.append("end");
   kernel_2["events"] = kernel_2_events;
+  // optional shared args
+  Json::Value kernel_2_shared_counters;
+  kernel_2_shared_counters.append("deviceBufferReady");
+  kernel_2_shared_counters.append("deviceKernelFinish");
+  kernel_2["sharedCounters"] = kernel_1_shared_counters;
+  Json::Value kernel_2_shared_buffers;
+  kernel_2_shared_buffers.append("d_in");
+  kernel_2["sharedBuffers"] = kernel_2_shared_buffers;
+  //
   kernels.append(kernel_2);
   
   root["kernels"] = kernels;
