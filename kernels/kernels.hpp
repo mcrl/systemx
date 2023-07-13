@@ -37,7 +37,11 @@ struct kernel_run_args {
   uint steps;
   std::vector<event_tuple_t> events;
 
-  /* optional shared arguments */
+  /* optional private arguments */
+  std::vector<uint> interactions; // list of peer driver (:=gpu) indices that the driver
+                                  // of which this kernel is launched interacts with
+
+  /* optional shared pointers */
   SYSTEMX::utils::shared_counter_map_t *shared_counter_map;
   SYSTEMX::utils::shared_buffer_map_t *shared_buffer_map;
 };

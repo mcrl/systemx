@@ -18,9 +18,10 @@ int main(int argc, char *argv[]) {
 	Json::Value kernels;
 
 	Json::Value kernel_1;
-  kernel_1["op"] = "pcieRead";
+  kernel_1["op"] = "pcieWrite";
   Json::Value kernel_1_gpus;
   kernel_1_gpus.append(0);
+  kernel_1_gpus.append(1);
   kernel_1["gpus"] = kernel_1_gpus;
   kernel_1["stream"] = 0;
   kernel_1["streamPriority"] = 0;
@@ -47,6 +48,12 @@ int main(int argc, char *argv[]) {
   Json::Value kernel_1_shared_buffers;
   kernel_1_shared_buffers.append("d_in");
   kernel_1["sharedBuffers"] = kernel_1_shared_buffers;
+  //// interactions
+  Json::Value kernel_1_interactions;
+  Json::Value kernel_1_interactions_gpu_0;
+  kernel_1_interactions_gpu_0.append(1);
+  kernel_1_interactions["0"] = kernel_1_interactions_gpu_0;
+  kernel_1["interactions"] = kernel_1_interactions;
   //
   kernels.append(kernel_1);
 
