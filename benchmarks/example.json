@@ -7,8 +7,7 @@
         "events" : [ "start", "end" ],
         "gpus" : [ 0 ],
         "op" : "cublasGemm",
-        "stream" : 0,
-        "require_sync": false
+        "stream" : 0
      },
      {
         "dimBlock" : [ 1024, 1, 1 ],
@@ -17,8 +16,7 @@
         "events" : [ "start", "end" ],
         "gpus" : [ 0 ],
         "op" : "idle",
-        "stream" : 1,
-        "require_sync": false
+        "stream" : 1
      }
   ]
 }
