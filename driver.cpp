@@ -14,11 +14,17 @@
 namespace SYSTEMX {
 namespace core {
 
+// define static member variables
+uint Driver::ngpus_;
+
 Driver::Driver(uint gpu_index) {
   spdlog::debug("Creating driver {}", gpu_index);
   gpu_index_ = gpu_index;
   CUDA_CALL(cudaSetDevice(gpu_index_));
   CUDA_CALL(cudaGetDeviceProperties(&device_properties_, gpu_index_));
+  for (uint peer = 0; peer < ngpus_; peer++) {
+    SYSTEMX::utils::enable_device_memory_access(gpu_index_, peer);
+  }
 
 #define T(op) kernel_map_[#op] = [&](kernel_run_args *args){return this->op##Run(args);};
   KERNELS()
@@ -37,6 +43,10 @@ Driver::~Driver() {
     CUDA_CALL(cudaStreamSynchronize(stream));
     CUDA_CALL(cudaStreamDestroy(stream));
   }
+
+  for (uint peer = 0; peer < ngpus_; peer++) {
+    SYSTEMX::utils::disable_device_memory_access(gpu_index_, peer);
+  }
 }
 
 cudaStream_t Driver::getStream(uint stream_id, int stream_priority = 0) {
@@ -48,7 +58,7 @@ cudaStream_t Driver::getStream(uint stream_id, int stream_priority = 0) {
       throw runtime_error("Stream priority out of range");
     }
     cudaStream_t stream;
-    CUDA_CALL(cudaStreamCreateWithPriority(&stream, cudaStreamDefault, stream_priority));
+    CUDA_CALL(cudaStreamCreateWithPriority(&stream, cudaStreamNonBlocking, stream_priority));
     stream_map_[stream_id] = stream;
   } else {
     int fixed_priority;
@@ -72,9 +82,9 @@ void Driver::launchKernel(std::string kernel, kernel_run_args *kargs) {
   if (kernel_map_.find(kernel) == kernel_map_.end()) {
     throw runtime_error("Kernel not found");
   }
-
+  spdlog::debug("Launching kernel {} on driver {}", kernel, gpu_index_);
   // bind Driver::gpu_index_ to thread & launch thread kernel 
-  std::thread t([&](kernel_run_args *args) {
+  std::thread t([&,kernel](kernel_run_args *args) {
     CUDA_CALL(cudaSetDevice(this->gpu_index_));
     this->kernel_map_[kernel](args);
   }, kargs);

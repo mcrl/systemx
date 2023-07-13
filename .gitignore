@@ -1,4 +1,4 @@
 .vscode
 build/
 profiles/
-benchmarks/*.json
+benchmarks/**/*.json

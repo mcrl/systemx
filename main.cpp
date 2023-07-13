@@ -4,6 +4,9 @@
 #include <string>
 #include <fstream>
 #include <type_traits>
+#include <condition_variable>
+#include <mutex>
+#include <map>
 
 #include "spdlog/spdlog.h"
 #include "json/json.h"
@@ -57,7 +60,8 @@ int main(int argc, char *argv[])
   map<int, Driver *> driver_map;
   CUDA_CALL(cudaGetDeviceCount(&ngpus));
   spdlog::info("Found {0} GPUs", ngpus);
-
+  Driver::ngpus_ = ngpus; // set static ngpus_ member to ngpus in the node
+  
   // Parse benchmark file
   Json::Reader reader;
   Json::Value root;
@@ -94,8 +98,38 @@ int main(int argc, char *argv[])
     auto _stream = (*iter)["stream"].asUInt();
     auto _streamPriority = (*iter)["streamPriority"].asInt();
     auto _dimGrid = asVector<uint>((*iter)["dimGrid"]);
-    auto _dimBlock = asVector<uint>((*iter)["dimGrid"]);
-    auto _events = asVector<string>((*iter)["events"]);
+    auto _dimBlock = asVector<uint>((*iter)["dimBlock"]);
+    auto _steps = (*iter)["steps"].asUInt();
+
+    /* optional private argyments */
+    vector<string> _events;
+    if ((*iter)["events"]) {
+      _events = asVector<string>((*iter)["events"]);
+    }
+    
+    map<uint, vector<uint>> _interactions;
+    if ((*iter)["interactions"]) {
+      for (auto const &k : (*iter)["interactions"].getMemberNames()) {
+        _interactions[(uint)stoi(k)] = asVector<uint>((*iter)["interactions"][k]);
+      }
+    }
+
+    /* optional shared arguments */
+    // since shared arguments are pointers to heap variables, they **must** be dynamically
+    // allocated and assigned as a member to `kargs`.
+    shared_counter_map_t *_shared_counter_map = new shared_counter_map_t;
+    if ((*iter)["sharedCounters"]) {
+      for (const auto &counter : (*iter)["sharedCounters"]) {
+        (*_shared_counter_map)[counter.asString()] = new SharedCounter(_gpus.size());
+      }
+    }
+
+    shared_buffer_map_t *_shared_buffer_map = new shared_buffer_map_t;
+    if ((*iter)["sharedBuffers"]) {
+      for (const auto &buffer : (*iter)["sharedBuffers"]) {
+        (*_shared_buffer_map)[buffer.asString()] = new vector<float*>(_gpus.size());
+      }
+    }
 
     for (uint gpu : _gpus) {
       CUDA_CALL(cudaSetDevice(gpu));
@@ -109,23 +143,39 @@ int main(int argc, char *argv[])
       kernel_run_args *kargs = new kernel_run_args;
       kargs->id = id;
       kargs->stream = driver_map[gpu]->getStream(_stream, _streamPriority);
+      kargs->gpus = _gpus;
       kargs->dimGrid = dim3(_dimGrid[0], _dimGrid[1], _dimGrid[2]);
       kargs->dimBlock = dim3(_dimBlock[0], _dimBlock[1], _dimBlock[2]);
+      kargs->steps = _steps;
+      
+      // add optional private arguments
 
-      // init events
-      map<string, event_tuple_t> _event_map; // temporary data structure
-      for (string _event : _events) {
-        cudaEvent_t _;
-        CUDA_CALL(cudaEventCreate(&_));
-        event_tuple_t event(_event, _);
-        _event_map[_event] = event;
-        kargs->events.push_back(event);
+      /// add events
+      if (!_events.empty()) {
+        map<string, event_tuple_t> _event_map; // temporary data structure
+        for (string _event : _events) {
+          cudaEvent_t _;
+          CUDA_CALL(cudaEventCreate(&_));
+          event_tuple_t event(_event, _);
+          _event_map[_event] = event;
+          kargs->events.push_back(event);
+        } 
+      }
+
+      /// add interactions
+      if (_interactions.find(gpu) != _interactions.end()) {
+        kargs->interactions = _interactions.at(gpu);
       }
       
-      spdlog::info("Launch Kernel {0} on GPU {1}", _op, gpu);
+      // add optional shared arguments
+      kargs->shared_counter_map = _shared_counter_map;
+      kargs->shared_buffer_map = _shared_buffer_map;
+      
       driver_map[gpu]->launchKernel(_op, kargs);
     }
   }
+
+  // TODO: cleanup kargs
 
   // cleanup driver
   for (const auto &[id, driver] : driver_map) {

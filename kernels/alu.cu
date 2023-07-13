@@ -9,19 +9,19 @@
 #include "utils.hpp"
 
 #define WPT 8 // Hyperparameter to maximize register spilling of local memory
-#define STEPS 12000000
 
 using SYSTEMX::core::Driver;
 
-__global__ void register_compute_kernel(float *d, const float seed) {  
+__global__ void alu_compute_kernel(float *d, const float seed,
+                                   const uint steps) {
   float tmps[WPT];
   int id = blockDim.x * blockIdx.x + threadIdx.x;
 
 #pragma unroll
-  for (int i = 0; i < WPT; i++) {
+  for (uint i = 0; i < WPT; i++) {
     tmps[i] = id / 3.0f; // some random initialization to avoid gmem access
 #pragma unroll
-    for (int j = 0; j < STEPS; j++) {
+    for (uint j = 0; j < steps; j++) {
       tmps[i] = mad(tmps[i], tmps[i], seed);
     }
   }
@@ -29,7 +29,7 @@ __global__ void register_compute_kernel(float *d, const float seed) {
   // To avoid kernel optimization
   float sum = int2floatCast(0);
 #pragma unroll
-  for (int j = 0; j < WPT; j += 2) {
+  for (uint j = 0; j < WPT; j += 2) {
     sum = mad(tmps[j], tmps[j + 1], sum);
     // Never executed, to avoid kernel optimization
     // If not kernel execution is skipped
@@ -39,8 +39,10 @@ __global__ void register_compute_kernel(float *d, const float seed) {
   }
 }
 
-void Driver::registerComputeRun(kernel_run_args *args) {
+void Driver::aluComputeRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
+
+  assertDeviceCorrect();
 
   srand((unsigned int)time(NULL));
   const int seed = rand();
@@ -54,14 +56,14 @@ void Driver::registerComputeRun(kernel_run_args *args) {
 
   float elapsed_ms;
   CUDA_CALL(cudaEventRecord(start, args->stream));
-  register_compute_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, seed);
+  alu_compute_kernel << <args->dimGrid, args->dimBlock, 0, args->stream >> > (d_in, seed, args->steps);
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
-  double gflops = 2.0 * (STEPS * WPT + WPT) * total_threads / elapsed_ms * 1e3 / 1e9;
-  spdlog::info("{}(id: {}) {:.2f} Gflops", FUNC_NAME(register_compute_kernel), args->id, gflops);
+  double gflops = 2.0 * (args->steps * WPT + WPT) * total_threads / elapsed_ms * 1e3 / 1e9;
+  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", FUNC_NAME(alu_compute_kernel), args->id, gflops, (int)elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaFree(d_in));

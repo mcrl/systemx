@@ -9,8 +9,11 @@ using SYSTEMX::core::Driver;
 
 // TODO: 
 //  - Set appropriate dimension sizes and SM count according to args->dimGrid/dimBlock
+//  - Take args->steps into account
 void Driver::cublasGemmRun(kernel_run_args *args) {
   spdlog::trace(__PRETTY_FUNCTION__);
+
+  assertDeviceCorrect();
 
   cudaStream_t stream = args->stream;
   cublasHandle_t handle;
@@ -45,7 +48,7 @@ void Driver::cublasGemmRun(kernel_run_args *args) {
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
   double gflops = 2.0 * M * K * N / elapsed_ms * 1e3 / 1e9;
-  spdlog::info("{}(id: {}) {:.2f} Gflops", "cublasGemm", args->id, gflops);
+  spdlog::info("{}(id: {}) {:.2f} Gflops {:d} ms", "cublasGemm", args->id, gflops, (int)elapsed_ms);
 
   // cleanup
   CUDA_CALL(cudaFree(d_A));
