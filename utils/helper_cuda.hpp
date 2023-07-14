@@ -37,5 +37,6 @@ namespace SYSTEMX {
 namespace utils {
 void enable_device_memory_access(int device, int peer);
 void disable_device_memory_access(int device, int peer);
+void check_pointer_attributes(int device, void *ptr);
 }
 }
