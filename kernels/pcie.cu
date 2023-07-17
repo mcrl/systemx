@@ -9,8 +9,8 @@
 #include "kernels.hpp"
 #include "utils.hpp"
 
-#define PCIE_STORE_NUM_FLOATS_PER_STEP 800000000 // 3.2GB
-#define PCIE_READ_NUM_FLOATS_PER_STEP 800000000 // 3.2GB
+#define PCIE_STORE_NUM_FLOATS_PER_STEP 805306368 // 3GiB
+#define PCIE_READ_NUM_FLOATS_PER_STEP 805306368 // 3GiB
 #define P2P true // TODO: make this as a kargs option 
 #define TRANSFER_TYPE float4
 
@@ -47,10 +47,7 @@ void Driver::pcieReadRun(kernel_run_args *args) {
 
   std::vector<int> access(args->interactions.size(), 0);
   const int in_size = PCIE_READ_NUM_FLOATS_PER_STEP;
-  // work per thread: float4 * (in_size / 4 / (dimGrid.x * dimBlock.x))
-  const int intra_step_access_per_thread = in_size / (args->dimGrid.x * args->dimBlock.x);
-  const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
-  double per_thread_bandwidth, bandwidth;
+  double bandwidth;
   
   // create event to check if buffer is ready
   cudaEvent_t ready;
@@ -90,18 +87,19 @@ void Driver::pcieReadRun(kernel_run_args *args) {
         (TRANSFER_TYPE *)(*((args->shared_buffer_map)->at("d_in")))[peer],
         in_size / (sizeof(TRANSFER_TYPE) / sizeof(float)), args->steps);
     } else {
-      cudaMemcpyPeerAsync(
-        (*((args->shared_buffer_map)->at("d_in")))[gpu_index_], gpu_index_,
-        (*((args->shared_buffer_map)->at("d_in")))[peer], peer,
-        in_size * sizeof(float), args->stream);
+      for (uint i = 0; i < args->steps; i++) {
+        cudaMemcpyPeerAsync(
+          (*((args->shared_buffer_map)->at("d_in")))[gpu_index_], gpu_index_,
+          (*((args->shared_buffer_map)->at("d_in")))[peer], peer,
+          in_size * sizeof(float), args->stream);
+      }
     }
   }
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
-  per_thread_bandwidth = args->steps * intra_step_access_per_thread * args->interactions.size() * sizeof(float) / elapsed_ms / 1e6;
-  bandwidth = per_thread_bandwidth * total_threads;
+  bandwidth = args->steps * in_size * args->interactions.size() * sizeof(float) / elapsed_ms / 1e6;
   spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(copyp2p_kernel), args->id, bandwidth, (int)elapsed_ms);
 
   // cleanup events
@@ -125,10 +123,7 @@ void Driver::pcieWriteRun(kernel_run_args *args) {
 
   std::vector<int> access(args->interactions.size(), 0);
   const int in_size = PCIE_STORE_NUM_FLOATS_PER_STEP;  
-  // work per thread: float4 * (in_size / 4 / (dimGrid.x * dimBlock.x))
-  const int intra_step_access_per_thread = in_size / (args->dimGrid.x * args->dimBlock.x);
-  const int total_threads = get_nthreads(args->dimGrid, args->dimBlock);
-  double per_thread_bandwidth, bandwidth;
+  double bandwidth;
   
   // create event to check if buffer is ready
   cudaEvent_t ready;
@@ -168,18 +163,19 @@ void Driver::pcieWriteRun(kernel_run_args *args) {
         (TRANSFER_TYPE *)(*((args->shared_buffer_map)->at("d_in")))[gpu_index_],
         in_size / (sizeof(TRANSFER_TYPE) / sizeof(float)), args->steps);
     } else {
-      cudaMemcpyPeerAsync(
-        (*((args->shared_buffer_map)->at("d_in")))[peer], peer,
-        (*((args->shared_buffer_map)->at("d_in")))[gpu_index_], gpu_index_,
-        in_size * sizeof(float), args->stream);
+      for (uint i = 0; i < args->steps; i++) {
+        cudaMemcpyPeerAsync(
+          (*((args->shared_buffer_map)->at("d_in")))[peer], peer,
+          (*((args->shared_buffer_map)->at("d_in")))[gpu_index_], gpu_index_,
+          in_size * sizeof(float), args->stream);
+      }
     }
   }
   CUDA_CALL(cudaEventRecord(end, args->stream));
   CUDA_CALL(cudaEventSynchronize(end));
   CUDA_CALL(cudaEventElapsedTime(&elapsed_ms, start, end));
 
-  per_thread_bandwidth = args->steps * intra_step_access_per_thread * sizeof(float) / elapsed_ms / 1e6;
-  bandwidth = per_thread_bandwidth * total_threads;
+  bandwidth = args->steps * in_size * args->interactions.size() * sizeof(float) / elapsed_ms / 1e6;
   spdlog::info("{}(id: {}) {:.2f} GB/s {:d} ms", FUNC_NAME(copyp2p_kernel), args->id, bandwidth, (int)elapsed_ms);
 
   // cleanup events
